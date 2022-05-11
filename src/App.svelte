@@ -1,12 +1,10 @@
 <script lang="ts">
     //import TopBar from "./TopBar.svelte";
     import Ipcalc from "./ipcalc.svelte";
+    import IpInfo from "./ipinfo.svelte";
     import { onDestroy, onMount } from "svelte";
-
     import type { DrawerComponentDev } from "@smui/drawer";
-
     import Drawer, { Content, Scrim, AppContent } from "@smui/drawer";
-
     import TopAppBar, { Row, Section, Title } from "@smui/top-app-bar";
     import IconButton from "@smui/icon-button";
     import { Icon } from "@smui/common";
@@ -18,8 +16,8 @@
     let menu: MenuComponentDev;
     let drawer: DrawerComponentDev;
     const sections = [
-        { name: "IP Info", component: Ipcalc },
-        { name: "IP Calc", component: Ipcalc },
+        { name: "IP information", component: IpInfo },
+        { name: "IP calculator", component: Ipcalc },
     ];
     let activeSection = sections[0];
     let miniWindow = false;
@@ -96,7 +94,7 @@
     {/if}
     <AppContent class="app-content">
         <main class="main-content">
-            <Ipcalc />
+            <svelte:component this={activeSection.component}/>
         </main>
     </AppContent>
 </div>
