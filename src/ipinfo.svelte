@@ -31,14 +31,14 @@
     <DataTable table$aria-label="ip list" style="width: auto;">
         <Body>
             <Row><Cell>IP address</Cell> <Cell>{ipAddress}</Cell></Row>
-            <Row><Cell>network</Cell> <Cell>{network}</Cell></Row>
+            <Row><Cell>Country</Cell> <Cell>{countryName}</Cell></Row>
+            <Row><Cell>Country code</Cell> <Cell>{countryCode}</Cell></Row>
+            <Row><Cell>City</Cell> <Cell>{cityName}</Cell></Row>
             <Row><Cell>AS number</Cell> <Cell>{asNumber}</Cell></Row>
-            <Row><Cell>AS Name</Cell> <Cell>{asName}</Cell></Row>
+            <Row><Cell>AS</Cell> <Cell>{asName}</Cell></Row>
             <Row><Cell>ISP</Cell> <Cell>{isp}</Cell></Row>
-            <Row><Cell>domain</Cell> <Cell>{domain}</Cell></Row>
-            <Row><Cell>countryCode</Cell> <Cell>{countryCode}</Cell></Row>
-            <Row><Cell>countryName</Cell> <Cell>{countryName}</Cell></Row>
-            <Row><Cell>cityName</Cell> <Cell>{cityName}</Cell></Row>
+            <Row><Cell>Domain</Cell> <Cell>{domain}</Cell></Row>
+            <Row><Cell>Network</Cell> <Cell>{network}</Cell></Row>
         </Body>
     </DataTable>
 </Card>
