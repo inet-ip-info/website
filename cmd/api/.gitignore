@@ -1,0 +1,5 @@
+.env
+data
+.geoip*
+api
+*.mmdb
