@@ -6,7 +6,7 @@
   import DataTable, { Body, Row, Cell } from "@smui/data-table";
 
   //let valueIP;
-  let value: string = "";
+  let value = "";
   let block: Netmask.Netmask = new Netmask.Netmask("0.0.0.0/0");
   function ipHandler() {
     block = new Netmask.Netmask(value);

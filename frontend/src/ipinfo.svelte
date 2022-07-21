@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import Netmask from "netmask";
   import Card from "@smui/card";
   import DataTable, { Body, Row, Cell } from "@smui/data-table";
   import { fetcher } from "./util";
@@ -76,13 +75,20 @@
       City: {
         Names: { en: "", de: "", es: "", fr: "", ja: "", ru: "" },
       },
+      Continent: null,
       Country: {
         IsInEuropeanUnion: false,
         IsoCode: "",
         Names: { en: "", de: "", es: "", fr: "", ja: "", ru: "" },
       },
+      RegisteredCountry: null,
       Postal: { Code: "" },
+      Location: null,
+      RepresentedCountry: null,
+      Subdivisions: null,
+      Traits: null,
     },
+    license: "",
   };
   let locationInfo = "";
   async function getIPinfo(ip: string) {

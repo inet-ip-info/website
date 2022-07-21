@@ -2,7 +2,7 @@
   //import TopBar from "./TopBar.svelte";
   import Ipcalc from "./ipcalc.svelte";
   import IpInfo from "./ipinfo.svelte";
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
   import type { DrawerComponentDev } from "@smui/drawer";
   import Drawer, { Content, Scrim, AppContent } from "@smui/drawer";
   import TopAppBar, { Row, Section, Title } from "@smui/top-app-bar";
@@ -15,11 +15,15 @@
   import List, { Item, Separator, Text } from "@smui/list";
   let menu: MenuComponentDev;
   let drawer: DrawerComponentDev;
-  const sections = [
+  type SectionComponent = {
+    name: string;
+    component: any;
+  };
+  const sections: SectionComponent[] = [
     { name: "IP information", component: IpInfo },
     { name: "IP calculator", component: Ipcalc },
   ];
-  let activeSection = sections[0];
+  let activeSection: SectionComponent = sections[0];
   let miniWindow = false;
   let drawerOpen = false;
   function setMiniWindow() {
@@ -27,19 +31,21 @@
       miniWindow = window.innerWidth < 720;
     }
   }
-  function sectionHandler(section) {
+  function sectionHandler(section: SectionComponent) {
     activeSection = section;
   }
   onMount(setMiniWindow);
+  function menuClick() {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    menu.setOpen(true);
+  }
 </script>
 
 <TopAppBar variant="static" color="secondary">
   <Row>
     <Section>
       {#if miniWindow}
-        <IconButton on:click="{() => menu.setOpen(true)}" class="material-icons"
-          >menu</IconButton
-        >
+        <IconButton on:click="{menuClick}" class="material-icons">menu</IconButton>
       {/if}
       <Title>inet-ip.info</Title>
     </Section>
