@@ -77,7 +77,19 @@ func (h *Handler) writeJSON(w http.ResponseWriter, req *http.Request) {
 	case http.MethodGet:
 		ip = getIp(req)
 	case http.MethodPost:
-		ip = req.FormValue("ip")
+		dec := json.NewDecoder(req.Body)
+		var v struct {
+			IP string `json:"ip"`
+		}
+		err := dec.Decode(&v)
+		if err != nil {
+			msg := fmt.Sprintf("json.Decode(%s) err:%s\n", ip, err)
+			log.Println(msg)
+			w.WriteHeader(http.StatusBadRequest)
+			io.WriteString(w, msg)
+		}
+		ip = v.IP
+
 	}
 	res, err := h.QueryIPinfo(ip)
 	if err != nil {

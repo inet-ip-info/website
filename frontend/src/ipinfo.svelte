@@ -3,15 +3,12 @@
   import Card from "@smui/card";
   import DataTable, { Body, Row, Cell } from "@smui/data-table";
   import { fetcher } from "./util";
+  import Textfield from "@smui/textfield";
+  import HelperText from "@smui/textfield/helper-text";
 
   type names = {
-    de: string;
-    en: string;
-    es: string;
-    fr: string;
-    ja: string;
-    ru: string;
-  };
+    [key: string]: string;
+  } | null;
 
   type ipinfo = {
     ipAddress: string;
@@ -21,22 +18,36 @@
     };
     city: {
       City: {
-        Names: names | null;
-      };
+        Names: names;
+      } | null;
       Continent: {
         Code: string;
-        Names: names | null;
+        Names: names;
       } | null;
       Country: {
         IsInEuropeanUnion: boolean;
         IsoCode: string;
-        Names: names | null;
-      };
+        Names: names;
+      } | null;
       RegisteredCountry: {
         IsInEuropeanUnion: boolean;
         IsoCode: string;
-        Names: names | null;
+        Names: names;
       } | null;
+      RepresentedCountry: {
+        IsInEuropeanUnion: boolean;
+        IsoCode: string;
+        Names: names;
+        Type: string;
+      } | null;
+      Subdivisions:
+        | [
+            {
+              IsoCode: string;
+              Names: names;
+            }
+          ]
+        | null;
       Postal: {
         Code: string;
       };
@@ -47,20 +58,6 @@
         MetroCode: number;
         TimeZone: string;
       };
-      RepresentedCountry: {
-        IsInEuropeanUnion: boolean;
-        IsoCode: string;
-        Names: names | null;
-        Type: string;
-      } | null;
-      Subdivisions:
-        | [
-            {
-              IsoCode: string;
-              Names: names | null;
-            }
-          ]
-        | null;
       Traits: {
         IsAnonymousProxy: boolean;
         IsSatelliteProvider: boolean;
@@ -100,6 +97,8 @@
       }),
     })
       .then((data) => {
+        info = data;
+        locationInfo = JSON.stringify(info.city.Location);
         console.log(data);
         return;
       })
@@ -122,21 +121,46 @@
       });
   }
   onMount(myIPinfo);
+  let value = "";
+  function ipHandler() {
+    getIPinfo(value).catch((error) => {
+      console.error("getIPinfo error:", error);
+    });
+  }
+  function getName(Names: names): string {
+    if (Names == null) {
+      return "";
+    }
+    if (navigator.language in Names) {
+      return Names[navigator.language];
+    }
+    if ("en" in Names) {
+      return Names["en"];
+    }
+    for (const property in Names) {
+      return Names[property];
+    }
+    return "";
+  }
 </script>
 
 <Card>
+  <div class="columns margins">
+    <Textfield
+      on:input="{ipHandler}"
+      variant="filled"
+      bind:value
+      label="Enter an IPv4 address"
+    >
+      <HelperText slot="helper">For example: '8.8.8.8'</HelperText>
+    </Textfield>
+  </div>
   <DataTable table$aria-label="ip list" style="width: auto;">
     <Body>
-      <Row><Cell>IP address</Cell> <Cell>{info.ipAddress}</Cell></Row>
       <Row
-        ><Cell>Country</Cell>
-        <Cell>{info.city.Country.Names.en}</Cell></Row
+        >{#if value == ""}<Cell>My IP address</Cell>{:else}<Cell>My IP address</Cell>{/if}
+        <Cell>{info.ipAddress}</Cell></Row
       >
-      <Row
-        ><Cell>Country code</Cell>
-        <Cell>{info.city.Country.IsoCode}</Cell></Row
-      >
-      <Row><Cell>City</Cell> <Cell>{info.city.City.Names.en}</Cell></Row>
       <Row
         ><Cell>AS</Cell>
         <Cell>{info.asn.AutonomousSystemNumber}</Cell></Row
@@ -145,6 +169,80 @@
         ><Cell>AS organization</Cell>
         <Cell>{info.asn.AutonomousSystemOrganization}</Cell></Row
       >
+      {#if info.city.Continent != null}
+        {#if info.city.Continent.Names != null}
+          <Row
+            ><Cell>Continent</Cell>
+            <Cell>{getName(info.city.Continent.Names)}</Cell></Row
+          >
+        {/if}
+      {/if}
+      {#if info.city.Country != null}
+        {#if info.city.Country.Names != null}
+          <Row
+            ><Cell>Country</Cell>
+            <Cell>{getName(info.city.Country.Names)}</Cell></Row
+          >
+          <Row
+            ><Cell>Country code</Cell>
+            <Cell>{info.city.Country.IsoCode}</Cell></Row
+          >
+        {/if}
+      {/if}
+      {#if info.city.RepresentedCountry != null}
+        {#if info.city.RepresentedCountry.Names != null}
+          <Row
+            ><Cell>RepresentedCountry</Cell>
+            <Cell>{getName(info.city.RepresentedCountry.Names)}</Cell></Row
+          >
+          <Row
+            ><Cell>RepresentedCountry ISO code</Cell>
+            <Cell>{info.city.RepresentedCountry.IsoCode}</Cell></Row
+          >
+        {/if}
+      {/if}
+      {#if info.city.RegisteredCountry != null}
+        {#if info.city.RegisteredCountry.Names != null}
+          <Row
+            ><Cell>Registered Country</Cell>
+            <Cell>{getName(info.city.RegisteredCountry.Names)}</Cell></Row
+          >
+          <Row
+            ><Cell>RegisteredCountry ISO code</Cell>
+            <Cell>{info.city.RegisteredCountry.IsoCode}</Cell></Row
+          >
+        {/if}
+      {/if}
+      {#if info.city.RegisteredCountry != null}
+        {#if info.city.RegisteredCountry.Names != null}
+          <Row
+            ><Cell>Registered Country</Cell>
+            <Cell>{getName(info.city.RegisteredCountry.Names)}</Cell></Row
+          >
+        {/if}
+      {/if}
+      {#if info.city.Subdivisions != null}
+        {#each info.city.Subdivisions as subdivision}
+          {#if subdivision.Names != null}
+            <Row
+              ><Cell>Subdivision</Cell>
+              <Cell>{getName(subdivision.Names)}</Cell></Row
+            >
+            <Row
+              ><Cell>Subdivision ISO code</Cell>
+              <Cell>{getName(subdivision.IsoCode)}</Cell></Row
+            >
+          {/if}
+        {/each}
+      {/if}
+      {#if info.city.City != null}
+        {#if info.city.City.Names != null}
+          <Row
+            ><Cell>City</Cell>
+            <Cell>{getName(info.city.City.Names)}</Cell></Row
+          >
+        {/if}
+      {/if}
       <Row
         ><Cell>Postal code</Cell>
         <Cell>{info.city.Postal.Code}</Cell></Row
