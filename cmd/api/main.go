@@ -94,8 +94,8 @@ func (h *Handler) writeJSON(w http.ResponseWriter, req *http.Request) {
 	res, err := h.QueryIPinfo(ip)
 	if err != nil {
 		msg := fmt.Sprintf("QueryIPinfo(%s) err:%s\n", ip, err)
-		log.Println(msg)
-		w.WriteHeader(http.StatusInternalServerError)
+		//log.Println(msg)
+		w.WriteHeader(http.StatusBadRequest)
 		io.WriteString(w, msg)
 		return
 	}

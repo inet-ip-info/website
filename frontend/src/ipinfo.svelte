@@ -5,6 +5,7 @@
   import { fetcher } from "./util";
   import Textfield from "@smui/textfield";
   import HelperText from "@smui/textfield/helper-text";
+  import Netmask from "netmask";
 
   type names = {
     [key: string]: string;
@@ -122,10 +123,25 @@
   }
   onMount(myIPinfo);
   let value = "";
+  function checkIP(ip: string): boolean {
+    try {
+      new Netmask.Netmask(ip);
+    } catch (e) {
+      return false;
+    }
+    return true;
+  }
   function ipHandler() {
-    getIPinfo(value).catch((error) => {
-      console.error("getIPinfo error:", error);
-    });
+    if (checkIP(value)) {
+      getIPinfo(value).catch((error) => {
+        console.error("getIPinfo error:", error);
+      });
+    }
+    if (value == "") {
+      myIPinfo().catch((error) => {
+        console.error("myIPinfo error:", error);
+      });
+    }
   }
   function getName(Names: names): string {
     if (Names == null) {
@@ -142,6 +158,40 @@
     }
     return "";
   }
+  function checkRepresentedCountry(info: ipinfo): boolean {
+    if (info.city.RepresentedCountry == null) {
+      return false;
+    }
+    let country = "";
+    if (info.city.Country != null) {
+      country = getName(info.city.Country.Names);
+    }
+    const representedCountry = getName(info.city.RepresentedCountry.Names);
+    if (representedCountry != "" && representedCountry != country) {
+      return true;
+    }
+    return false;
+  }
+  function checkRegisteredCountry(info: ipinfo): boolean {
+    if (info.city.RegisteredCountry == null) {
+      return false;
+    }
+    let country = "";
+    if (info.city.RepresentedCountry != null) {
+      country = getName(info.city.RepresentedCountry.Names);
+    }
+    if (country == "") {
+      if (info.city.Country != null) {
+        country = getName(info.city.Country.Names);
+      }
+    }
+    const registeredCountry = getName(info.city.RegisteredCountry.Names);
+    if (registeredCountry != "" && registeredCountry != country) {
+      return true;
+    }
+    return false;
+  }
+  /* eslint-disable */
 </script>
 
 <Card>
@@ -158,7 +208,7 @@
   <DataTable table$aria-label="ip list" style="width: auto;">
     <Body>
       <Row
-        >{#if value == ""}<Cell>My IP address</Cell>{:else}<Cell>My IP address</Cell>{/if}
+        >{#if value == ""}<Cell>My IP address</Cell>{:else}<Cell>IP address</Cell>{/if}
         <Cell>{info.ipAddress}</Cell></Row
       >
       <Row
@@ -184,42 +234,30 @@
             <Cell>{getName(info.city.Country.Names)}</Cell></Row
           >
           <Row
-            ><Cell>Country code</Cell>
+            ><Cell>Country ISO code</Cell>
             <Cell>{info.city.Country.IsoCode}</Cell></Row
           >
         {/if}
       {/if}
-      {#if info.city.RepresentedCountry != null}
-        {#if info.city.RepresentedCountry.Names != null}
-          <Row
-            ><Cell>RepresentedCountry</Cell>
-            <Cell>{getName(info.city.RepresentedCountry.Names)}</Cell></Row
-          >
-          <Row
-            ><Cell>RepresentedCountry ISO code</Cell>
-            <Cell>{info.city.RepresentedCountry.IsoCode}</Cell></Row
-          >
-        {/if}
+      {#if checkRepresentedCountry(info)}
+        <Row
+          ><Cell>RepresentedCountry</Cell>
+          <Cell>{getName(info.city.RepresentedCountry.Names)}</Cell></Row
+        >
+        <Row
+          ><Cell>RepresentedCountry ISO code</Cell>
+          <Cell>{info.city.RepresentedCountry.IsoCode}</Cell></Row
+        >
       {/if}
-      {#if info.city.RegisteredCountry != null}
-        {#if info.city.RegisteredCountry.Names != null}
-          <Row
-            ><Cell>Registered Country</Cell>
-            <Cell>{getName(info.city.RegisteredCountry.Names)}</Cell></Row
-          >
-          <Row
-            ><Cell>RegisteredCountry ISO code</Cell>
-            <Cell>{info.city.RegisteredCountry.IsoCode}</Cell></Row
-          >
-        {/if}
-      {/if}
-      {#if info.city.RegisteredCountry != null}
-        {#if info.city.RegisteredCountry.Names != null}
-          <Row
-            ><Cell>Registered Country</Cell>
-            <Cell>{getName(info.city.RegisteredCountry.Names)}</Cell></Row
-          >
-        {/if}
+      {#if checkRegisteredCountry(info)}
+        <Row
+          ><Cell>Registered Country</Cell>
+          <Cell>{getName(info.city.RegisteredCountry.Names)}</Cell></Row
+        >
+        <Row
+          ><Cell>RegisteredCountry ISO code</Cell>
+          <Cell>{info.city.RegisteredCountry.IsoCode}</Cell></Row
+        >
       {/if}
       {#if info.city.Subdivisions != null}
         {#each info.city.Subdivisions as subdivision}
@@ -230,7 +268,7 @@
             >
             <Row
               ><Cell>Subdivision ISO code</Cell>
-              <Cell>{getName(subdivision.IsoCode)}</Cell></Row
+              <Cell>{subdivision.IsoCode}</Cell></Row
             >
           {/if}
         {/each}
