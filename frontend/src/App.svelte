@@ -9,7 +9,7 @@
   import IconButton from "@smui/icon-button";
   import { Icon } from "@smui/common";
   import { mdiGithub } from "@mdi/js";
-  import { A, Svg } from "@smui/common/elements";
+  import { Svg } from "@smui/common/elements";
   import type { MenuComponentDev } from "@smui/menu";
   import Menu from "@smui/menu";
   import List, { Item, Separator, Text } from "@smui/list";
@@ -17,6 +17,7 @@
   let drawer: DrawerComponentDev;
   type SectionComponent = {
     name: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     component: any;
   };
   const sections: SectionComponent[] = [
@@ -69,6 +70,7 @@
         <Text class="mdc-theme--on-secondary">{section.name}</Text>
       </Item>
     {/each}
+    <Separator/>
     <Item>
       <Text>Cancel</Text>
     </Item>
