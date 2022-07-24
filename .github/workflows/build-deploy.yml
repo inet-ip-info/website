@@ -10,8 +10,8 @@ permissions:
     contents: write
 
 jobs:
-    run-linters:
-        name: Run linters
+    run-build:
+        name: Run build
         runs-on: ubuntu-latest
         steps:
           - name: Check out Git repository
@@ -37,5 +37,21 @@ jobs:
           - name: Run build
             run: |
               go version
+              ls -la ../../frontend/public
+              ls -la ../../frontend/public/build
               go build
+              ls -la ./api
+            working-directory: ./cmd/api
+          - name: Setup ssh
+            uses: shimataro/ssh-key-action@v2
+            with:
+              key: ${{ secrets.SSH_KEY }}
+              name: id_ed25519
+              known_hosts: ${{ secrets.KNOWN_HOSTS }}
+              if_key_exists: fail # replace / ignore / fail; optional (defaults to fail)
+          - name: Run deploy
+            run: |
+              ls -la ./api
+              scp -P${{ secrets.SSH_PORT }} ./api ${{ secrets.SSH_USER }}@${{ secrets.SSH_SERVER }}:api
+              ssh -p${{ secrets.SSH_PORT }}  ${{ secrets.SSH_USER }}@${{ secrets.SSH_SERVER }} "sudo /opt/inet-ip.info/deploy.sh"
             working-directory: ./cmd/api
