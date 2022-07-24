@@ -6,8 +6,8 @@ on:
             - 'frontend/**'
 
 permissions:
-    contents: read
-    pull-requests: write
+    checks: write
+    contents: write
 
 jobs:
     run-linters:
