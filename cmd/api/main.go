@@ -77,13 +77,25 @@ func (h *Handler) writeJSON(w http.ResponseWriter, req *http.Request) {
 	case http.MethodGet:
 		ip = getIp(req)
 	case http.MethodPost:
-		ip = req.FormValue("ip")
+		dec := json.NewDecoder(req.Body)
+		var v struct {
+			IP string `json:"ip"`
+		}
+		err := dec.Decode(&v)
+		if err != nil {
+			msg := fmt.Sprintf("json.Decode(%s) err:%s\n", ip, err)
+			log.Println(msg)
+			w.WriteHeader(http.StatusBadRequest)
+			io.WriteString(w, msg)
+		}
+		ip = v.IP
+
 	}
 	res, err := h.QueryIPinfo(ip)
 	if err != nil {
 		msg := fmt.Sprintf("QueryIPinfo(%s) err:%s\n", ip, err)
-		log.Println(msg)
-		w.WriteHeader(http.StatusInternalServerError)
+		//log.Println(msg)
+		w.WriteHeader(http.StatusBadRequest)
 		io.WriteString(w, msg)
 		return
 	}
@@ -106,6 +118,15 @@ func (h *Handler) root(w http.ResponseWriter, req *http.Request) {
 	}[isUAofCLI(req.Header["User-Agent"])](w, req)
 }
 
+func (h *Handler) updateDBsCron() {
+	c := time.Tick(24 * time.Hour)
+	for range c {
+		if err := h.UpdateDBs(); err != nil {
+			log.Print(err)
+		}
+	}
+}
+
 func main() {
 	c := &config{}
 	if err := envconfig.Process("", c); err != nil {
@@ -123,6 +144,7 @@ func main() {
 	if err := h.UpdateDBs(); err != nil {
 		log.Print(err)
 	}
+	go h.updateDBsCron()
 	if err := h.OpenDbs(); err != nil {
 		log.Fatal(err)
 	}

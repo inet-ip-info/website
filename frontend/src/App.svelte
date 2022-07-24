@@ -9,7 +9,7 @@
   import IconButton from "@smui/icon-button";
   import { Icon } from "@smui/common";
   import { mdiGithub } from "@mdi/js";
-  import { A, Svg } from "@smui/common/elements";
+  import { Svg } from "@smui/common/elements";
   import type { MenuComponentDev } from "@smui/menu";
   import Menu from "@smui/menu";
   import List, { Item, Separator, Text } from "@smui/list";
@@ -17,6 +17,7 @@
   let drawer: DrawerComponentDev;
   type SectionComponent = {
     name: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     component: any;
   };
   const sections: SectionComponent[] = [
@@ -41,6 +42,7 @@
   }
 </script>
 
+<svelte:window on:resize="{setMiniWindow}" />
 <TopAppBar variant="static" color="secondary">
   <Row>
     <Section>
@@ -50,7 +52,7 @@
       <Title>inet-ip.info</Title>
     </Section>
     <Section align="end" toolbar>
-      <IconButton href="https://github.com/hperrin/svelte-material-ui">
+      <IconButton href="https://github.com/inet-ip-info/website">
         <Icon component="{Svg}" viewBox="0 0 24 24">
           <path fill="currentColor" d="{mdiGithub}"></path>
         </Icon>
@@ -60,9 +62,14 @@
 </TopAppBar>
 <Menu bind:this="{menu}">
   <List>
-    <Item>
-      <A href="https://inet-ip.info">inet-ip.info</A>
-    </Item>
+    {#each sections as section}
+      <Item
+        on:click="{() => sectionHandler(section)}"
+        activated="{section === activeSection}"
+      >
+        <Text class="mdc-theme--on-secondary">{section.name}</Text>
+      </Item>
+    {/each}
     <Separator />
     <Item>
       <Text>Cancel</Text>

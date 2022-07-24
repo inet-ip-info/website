@@ -88,12 +88,8 @@ func (gdb *GeoIPDBs) QueryIPinfo(remoteIP string) (info, error) {
 }
 
 func (gdb *GeoIPDBs) UpdateDBs() error {
-	tmpdir, err := os.MkdirTemp(gdb.config.DatabaseDirectory, "update-geoip-tmp.")
-	defer os.RemoveAll(tmpdir)
-	if err != nil {
-		return err
-	}
 	count := 0
+	srcs := make([]string, 0, len(EditionIDs))
 	for i := range EditionIDs {
 		src := filepath.Join(gdb.config.DatabaseDirectory, EditionIDs[i]+ext)
 		sfi, err := os.Stat(src)
@@ -103,18 +99,25 @@ func (gdb *GeoIPDBs) UpdateDBs() error {
 			continue
 		}
 		if time.Since(sfi.ModTime()) < gdb.expiry {
-			//log.Printf("modtime:%s", sfi.ModTime())
 			continue
 		}
+		srcs = append(srcs, src)
+		count++
+	}
+	if count == 0 {
+		return nil
+	}
+	tmpdir, err := os.MkdirTemp(gdb.config.DatabaseDirectory, "update-geoip-tmp.")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpdir)
+	for i, src := range srcs {
 		tmpfile := filepath.Join(tmpdir, EditionIDs[i])
 		if err := copyFileContents(src, tmpfile); err != nil {
 			return err
 		}
-		count++
 		log.Printf("cp %s %s", src, tmpfile)
-	}
-	if count == 0 {
-		return nil
 	}
 	log.Print("Check Update DBs...")
 	conf := *gdb.config

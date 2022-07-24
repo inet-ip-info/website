@@ -18,8 +18,10 @@
     <Textfield
       on:input="{ipHandler}"
       variant="filled"
+      style="width: 100%;"
+      helperLine$style="width: 100%;"
       bind:value
-      label="IPv4 address(CIDR)"
+      label="Enter an IPv4 address(CIDR)"
     >
       <HelperText slot="helper">For example: '192.168.0.1/24'</HelperText>
     </Textfield>
