@@ -118,6 +118,15 @@ func (h *Handler) root(w http.ResponseWriter, req *http.Request) {
 	}[isUAofCLI(req.Header["User-Agent"])](w, req)
 }
 
+func (h *Handler) updateDBsCron() {
+	c := time.Tick(24 * time.Hour)
+	for range c {
+		if err := h.UpdateDBs(); err != nil {
+			log.Print(err)
+		}
+	}
+}
+
 func main() {
 	c := &config{}
 	if err := envconfig.Process("", c); err != nil {
@@ -135,6 +144,7 @@ func main() {
 	if err := h.UpdateDBs(); err != nil {
 		log.Print(err)
 	}
+	go h.updateDBsCron()
 	if err := h.OpenDbs(); err != nil {
 		log.Fatal(err)
 	}

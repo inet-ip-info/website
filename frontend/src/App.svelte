@@ -41,6 +41,7 @@
   }
 </script>
 
+<svelte:window on:resize="{setMiniWindow}" />
 <TopAppBar variant="static" color="secondary">
   <Row>
     <Section>
@@ -50,7 +51,7 @@
       <Title>inet-ip.info</Title>
     </Section>
     <Section align="end" toolbar>
-      <IconButton href="https://github.com/hperrin/svelte-material-ui">
+      <IconButton href="https://github.com/inet-ip-info/website">
         <Icon component="{Svg}" viewBox="0 0 24 24">
           <path fill="currentColor" d="{mdiGithub}"></path>
         </Icon>
@@ -60,10 +61,14 @@
 </TopAppBar>
 <Menu bind:this="{menu}">
   <List>
-    <Item>
-      <A href="https://inet-ip.info">inet-ip.info</A>
-    </Item>
-    <Separator />
+    {#each sections as section}
+      <Item
+        on:click="{() => sectionHandler(section)}"
+        activated="{section === activeSection}"
+      >
+        <Text class="mdc-theme--on-secondary">{section.name}</Text>
+      </Item>
+    {/each}
     <Item>
       <Text>Cancel</Text>
     </Item>

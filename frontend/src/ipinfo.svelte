@@ -241,11 +241,11 @@
       {/if}
       {#if checkRepresentedCountry(info)}
         <Row
-          ><Cell>RepresentedCountry</Cell>
+          ><Cell>Represented Country</Cell>
           <Cell>{getName(info.city.RepresentedCountry.Names)}</Cell></Row
         >
         <Row
-          ><Cell>RepresentedCountry ISO code</Cell>
+          ><Cell>Represented Country ISO code</Cell>
           <Cell>{info.city.RepresentedCountry.IsoCode}</Cell></Row
         >
       {/if}
@@ -255,19 +255,19 @@
           <Cell>{getName(info.city.RegisteredCountry.Names)}</Cell></Row
         >
         <Row
-          ><Cell>RegisteredCountry ISO code</Cell>
+          ><Cell>Registered Country ISO code</Cell>
           <Cell>{info.city.RegisteredCountry.IsoCode}</Cell></Row
         >
       {/if}
       {#if info.city.Subdivisions != null}
-        {#each info.city.Subdivisions as subdivision}
+        {#each info.city.Subdivisions as subdivision, i}
           {#if subdivision.Names != null}
             <Row
-              ><Cell>Subdivision</Cell>
+              ><Cell>Subdivision{i + 1}</Cell>
               <Cell>{getName(subdivision.Names)}</Cell></Row
             >
             <Row
-              ><Cell>Subdivision ISO code</Cell>
+              ><Cell>Subdivision{i + 1} ISO code</Cell>
               <Cell>{subdivision.IsoCode}</Cell></Row
             >
           {/if}
