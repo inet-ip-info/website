@@ -70,7 +70,7 @@
         <Text class="mdc-theme--on-secondary">{section.name}</Text>
       </Item>
     {/each}
-    <Separator/>
+    <Separator />
     <Item>
       <Text>Cancel</Text>
     </Item>
