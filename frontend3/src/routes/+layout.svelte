@@ -99,7 +99,7 @@
             </ul>
           </li>
         </ul>
-        <div class="d-flex input-group custom-input-container">
+        <div class="d-flex input-group-sm custom-input-container">
           <span class="input-group-text">Your IP address</span>
           <input type="text" class="form-control" value={ip} readonly disabled />
         </div>
@@ -146,6 +146,6 @@
     max-width: 960px;
   }
   .custom-input-container {
-    width: 285px; /* ここに希望の幅を設定 */
+    width: 240px; /* ここに希望の幅を設定 */
   }
 </style>
