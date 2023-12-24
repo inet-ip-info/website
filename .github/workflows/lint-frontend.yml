@@ -36,7 +36,7 @@ jobs:
               prettier: true
               eslint: true
               eslint_extensions: 'js,json,ts,svelte'
-              eslint_args: '-c .eslintrc.js'
+              eslint_args: '-c .eslintrc.cjs'
               eslint_auto_fix: true
               eslint_dir: ./frontend
               prettier_extensions: 'svelte,js,json,ts,md,html'
