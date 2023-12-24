@@ -120,7 +120,8 @@ func (h *Handler) root(w http.ResponseWriter, req *http.Request) {
 }
 
 func (h *Handler) writeOtherPath(w http.ResponseWriter, req *http.Request) {
-	dir := req.URL.RawPath
+	dir := req.URL.Path
+	//log.Printf("req.URL:%s", dumpJSON(req.URL))
 	if dir == "" || dir == "/" {
 		h.writeHTML(w, req)
 		return
@@ -128,8 +129,8 @@ func (h *Handler) writeOtherPath(w http.ResponseWriter, req *http.Request) {
 	if !strings.HasSuffix(req.URL.RawPath, ".html") {
 		dir = dir + ".html"
 	}
-	if _, ok := h.htmls[dir]; ok {
-		h.writeIndexHTML(w, req)
+	if _, ok := h.htmls[strings.TrimPrefix(dir, "/")]; ok {
+		req.URL.Path = dir
 	}
 	h.writeHTML(w, req)
 }
@@ -151,10 +152,10 @@ func (h *Handler) writeIndexHTML(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		io.WriteString(w, msg)
 	}
-	defer f.Close()
-	w.WriteHeader(http.StatusAccepted)
-	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
 	io.Copy(w, f)
+	f.Close()
 }
 
 func main() {
@@ -171,6 +172,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Printf("htmls:%v", htmls)
 	h := &Handler{
 		GeoIPDBs:          NewGeoIPDBs(c.NewGeoIPupdateConfig(), c.GeoIPDataExpiry),
 		staticFileHandler: http.FileServer(http.FS(vfs)),
