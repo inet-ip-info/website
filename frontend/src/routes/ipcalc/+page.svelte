@@ -1,6 +1,5 @@
 <script lang="ts">
   import Netmask from "netmask";
-  import { blur } from "svelte/transition";
   import { isValidIPv4CIDR } from "$lib/util";
 
   let value = "";
