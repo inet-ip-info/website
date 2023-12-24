@@ -39,7 +39,7 @@ jobs:
         run: |
           go version
           ls -la ../../frontend/public
-          go build
+          CGO_ENABLED=0 go build
           ls -la ./api
         working-directory: ./cmd/api
       - name: Setup ssh
