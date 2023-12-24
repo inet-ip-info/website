@@ -43,6 +43,8 @@ func (c *config) NewGeoIPupdateConfig() *geoipupdate.Config {
 type Handler struct {
 	*GeoIPDBs
 	staticFileHandler http.Handler
+	vfs               fs.FS
+	htmls             map[string]bool
 }
 
 func isUAofCLI(uas []string) bool {
@@ -110,12 +112,26 @@ func (h *Handler) writeIPrn(w http.ResponseWriter, req *http.Request) {
 func (h *Handler) writeHTML(w http.ResponseWriter, req *http.Request) {
 	h.staticFileHandler.ServeHTTP(w, req)
 }
-
 func (h *Handler) root(w http.ResponseWriter, req *http.Request) {
 	map[bool]http.HandlerFunc{
 		true:  h.writeIPrn,
-		false: h.writeHTML,
+		false: h.writeOtherPath,
 	}[isUAofCLI(req.Header["User-Agent"])](w, req)
+}
+
+func (h *Handler) writeOtherPath(w http.ResponseWriter, req *http.Request) {
+	dir := req.URL.RawPath
+	if dir == "" || dir == "/" {
+		h.writeHTML(w, req)
+		return
+	}
+	if !strings.HasSuffix(req.URL.RawPath, ".html") {
+		dir = dir + ".html"
+	}
+	if _, ok := h.htmls[dir]; ok {
+		h.writeIndexHTML(w, req)
+	}
+	h.writeHTML(w, req)
 }
 
 func (h *Handler) updateDBsCron() {
@@ -127,19 +143,42 @@ func (h *Handler) updateDBsCron() {
 	}
 }
 
+func (h *Handler) writeIndexHTML(w http.ResponseWriter, req *http.Request) {
+	f, err := h.vfs.Open("index.html")
+	if err != nil {
+		msg := fmt.Sprintf("vfs.Open(index.html) err:%s\n", err)
+		log.Println(msg)
+		w.WriteHeader(http.StatusBadRequest)
+		io.WriteString(w, msg)
+	}
+	defer f.Close()
+	w.WriteHeader(http.StatusAccepted)
+	w.Header().Set("Content-Type", "text/html")
+	io.Copy(w, f)
+}
+
 func main() {
 	c := &config{}
 	if err := envconfig.Process("", c); err != nil {
 		log.Fatal(err)
 	}
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	public, err := fs.Sub(frontend.Public, "public")
+	vfs, err := fs.Sub(frontend.Public, "public")
+	if err != nil {
+		log.Fatal(err)
+	}
+	htmls, err := fs.Glob(vfs, "*.html")
 	if err != nil {
 		log.Fatal(err)
 	}
 	h := &Handler{
 		GeoIPDBs:          NewGeoIPDBs(c.NewGeoIPupdateConfig(), c.GeoIPDataExpiry),
-		staticFileHandler: http.FileServer(http.FS(public)),
+		staticFileHandler: http.FileServer(http.FS(vfs)),
+		vfs:               vfs,
+		htmls:             map[string]bool{},
+	}
+	for _, html := range htmls {
+		h.htmls[html] = true
 	}
 	if err := h.UpdateDBs(); err != nil {
 		log.Print(err)

@@ -59,6 +59,7 @@
         updateNavbarIP(info.ipAddress);
         value = info.ipAddress;
         myIP = info.ipAddress;
+        console.info("myIpinfo myIP: ", myIP);
         return;
       })
       .catch((error) => {
