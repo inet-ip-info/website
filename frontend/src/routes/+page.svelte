@@ -31,40 +31,50 @@
   const updateNavbarIP = (myIP: string) => {
     navbarIP.set(myIP);
   };
-  const fetchIPinfo = async (path: string, options = {}) => {
-    try {
-      const data = await fetcher<ipinfo>(path, options);
-      console.log(data);
-      info = data;
-    } catch (error) {
-      console.error("fetchIPinfo error:", error);
-    }
-  };
 
-  const getIPinfo = async (ip: string) => {
-    if (dev) {
-      info = testData;
-      return;
-    }
-    await fetchIPinfo("/json", {
+  async function getIPinfo(ip: string) {
+    await fetcher<ipinfo>("/json", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ip }),
-    });
-  };
+      body: JSON.stringify({
+        ip: ip,
+      }),
+    })
+      .then((data) => {
+        info = data;
+        console.log(data);
+        return;
+      })
+      .catch((error) => {
+        console.error("getIPinfo error:", error);
+      });
+  }
+  async function myIPinfo() {
+    await fetcher<ipinfo>("/json", {
+      method: "GET",
+    })
+      .then((data) => {
+        console.log(data);
+        info = data;
+        return;
+      })
+      .catch((error) => {
+        console.error("myIPinfo error:", error);
+      });
+  }
 
-  const myIPinfo = async () => {
+  onMount(() => {
     if (dev) {
       info = testData;
+      value = info.ipAddress;
+      myIP = info.ipAddress;
       return;
     }
-    await fetchIPinfo("/json", { method: "GET" });
-  };
-  onMount(() => {
-    myIPinfo();
-    updateNavbarIP(info.ipAddress);
-    value = info.ipAddress;
-    myIP = info.ipAddress;
+    myIPinfo().then(() => {
+      updateNavbarIP(info.ipAddress);
+      value = info.ipAddress;
+      myIP = info.ipAddress;
+    });
   });
   let value = "";
   let isInvalidIP = false;

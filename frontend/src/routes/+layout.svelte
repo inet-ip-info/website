@@ -27,7 +27,6 @@
     />
   </symbol>
 </svg>
-{#if ip !== ""}
   <div class="dropdown position-fixed bottom-0 end-0 mb-3 me-3 bd-mode-toggle" transition:blur={{ opacity: 1000 }}>
     <button
       class="btn btn-bd-primary py-2 dropdown-toggle d-flex align-items-center"
@@ -99,14 +98,15 @@
             </ul>
           </li>
         </ul>
+{#if ip !== ""}
         <div class="d-flex input-group-sm custom-input-container">
           <span class="input-group-text">Your IP address</span>
           <input type="text" class="form-control" value={ip} readonly disabled />
         </div>
+{/if}
       </div>
     </div>
   </nav>
-{/if}
 
 <div class="container">
   <slot />
