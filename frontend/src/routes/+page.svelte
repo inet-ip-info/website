@@ -28,7 +28,6 @@
     license: "",
   };
   let myIP = "";
-  let locationInfo = "";
   const updateNavbarIP = (myIP: string) => {
     navbarIP.set(myIP);
   };
@@ -37,7 +36,6 @@
       const data = await fetcher<ipinfo>(path, options);
       console.log(data);
       info = data;
-      locationInfo = JSON.stringify(data.city.Location);
     } catch (error) {
       console.error("fetchIPinfo error:", error);
     }
@@ -46,7 +44,6 @@
   const getIPinfo = async (ip: string) => {
     if (dev) {
       info = testData;
-      locationInfo = JSON.stringify(testData.city.Location);
       return;
     }
     await fetchIPinfo("/json", {
@@ -59,7 +56,6 @@
   const myIPinfo = async () => {
     if (dev) {
       info = testData;
-      locationInfo = JSON.stringify(testData.city.Location);
       return;
     }
     await fetchIPinfo("/json", { method: "GET" });
