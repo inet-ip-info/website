@@ -56,6 +56,9 @@
       .then((data) => {
         console.log(data);
         info = data;
+        updateNavbarIP(info.ipAddress);
+        value = info.ipAddress;
+        myIP = info.ipAddress;
         return;
       })
       .catch((error) => {
@@ -70,11 +73,7 @@
       myIP = info.ipAddress;
       return;
     }
-    myIPinfo().then(() => {
-      updateNavbarIP(info.ipAddress);
-      value = info.ipAddress;
-      myIP = info.ipAddress;
-    });
+    myIPinfo();
   });
   let value = "";
   let isInvalidIP = false;
