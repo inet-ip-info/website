@@ -56,10 +56,12 @@
       .then((data) => {
         console.log(data);
         info = data;
-        updateNavbarIP(info.ipAddress);
-        value = info.ipAddress;
-        myIP = info.ipAddress;
-        console.info("myIpinfo myIP: ", myIP);
+        if (myIP === "") {
+          updateNavbarIP(info.ipAddress);
+          value = info.ipAddress;
+          myIP = info.ipAddress;
+          console.info("myIpinfo myIP: ", myIP);
+        }
         return;
       })
       .catch((error) => {
