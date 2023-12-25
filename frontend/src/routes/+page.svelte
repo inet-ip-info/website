@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fetcher, testData, checkIP, getRepresentedCountry, navbarIP } from "$lib/util";
+  import { t } from "$lib/i18n";
   import { blur } from "svelte/transition";
   import type { ipinfo, names } from "$lib/util";
   import { onMount } from "svelte";
@@ -151,17 +152,17 @@
   /* eslint-disable */
 </script>
 
+<svelte:head>
+  <title>{$t("homepage.title")}</title>
+  <description>{$t("homepage.description")}</description>
+</svelte:head>
+
 {#if myIP !== ""}
   <div transition:blur={{ opacity: 1000 }}>
     <div class="py-5 text-center">
       <img class="d-block mx-auto mb-4" src="sitelogo.svg" alt="" width="172" height="157" />
       <h1>inet-ip.info</h1>
-      <p class="lead">
-        This website is a web service that allows you to check your current IP address. It is a web service written in the Go language, and
-        its source code is publicly available on <a href="https://github.com/inet-ip-info/website/" class="link-underline-primary">GitHub</a
-        >. This service is particularly useful for individuals and developers who need to quickly determine their public IP address for
-        various network tasks, troubleshooting, or development purposes.
-      </p>
+      <p class="lead">{@html $t("homepage.welcome")}</p>
     </div>
 
     <div class="col-sm-6 mb-3">
