@@ -1,6 +1,8 @@
 <script lang="ts">
   import Netmask from "netmask";
   import { isValidIPv4CIDR } from "$lib/util";
+  import { t, initLocate } from "$lib/i18n";
+  import { onMount } from "svelte";
 
   let value = "";
   let isInvalidIP = false;
@@ -13,14 +15,14 @@
     }
     isInvalidIP = true;
   }
+  onMount(() => {
+    initLocate();
+  });
 </script>
 
 <div class="py-5 text-center">
-  <h1>IP Calculator</h1>
-  <p class="lead">
-    This tool takes the bit number in CIDR (Classless Inter-Domain Routing) notation as input and calculates important network information
-    based on it, including the network address, the number of usable hosts, the subnet mask, and the broadcast address.
-  </p>
+  <h1>{$t("ipcalc.title")}</h1>
+  <p class="lead">{$t("ipcalc.welcome")}</p>
 </div>
 <div class="columns margins mb-3">
   <div class="input-group">
