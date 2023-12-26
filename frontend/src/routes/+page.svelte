@@ -219,7 +219,7 @@
                   <td>{getName(info.city.Country.Names)}</td></tr
                 >
                 <tr
-                  ><th scope="row">{$t("home.Continent")} ISO code</th>
+                  ><th scope="row">{$t("home.Country")} ISO code</th>
                   <td>{info.city.Country.IsoCode}</td></tr
                 >
               {/if}
