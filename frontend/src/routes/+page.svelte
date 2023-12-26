@@ -76,6 +76,7 @@
       info = testData;
       value = info.ipAddress;
       myIP = info.ipAddress;
+      updateNavbarIP(info.ipAddress);
       return;
     }
     myIPinfo();
