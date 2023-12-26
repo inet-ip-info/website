@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fetcher, testData, checkIP, getRepresentedCountry, navbarIP } from "$lib/util";
+  import { t, initLocate } from "$lib/i18n";
   import { blur } from "svelte/transition";
   import type { ipinfo, names } from "$lib/util";
   import { onMount } from "svelte";
@@ -70,6 +71,7 @@
   }
 
   onMount(() => {
+    initLocate();
     if (dev) {
       info = testData;
       value = info.ipAddress;
@@ -151,28 +153,27 @@
   /* eslint-disable */
 </script>
 
+<svelte:head>
+  <title>{$t("home.title")}</title>
+</svelte:head>
+
 {#if myIP !== ""}
   <div transition:blur={{ opacity: 1000 }}>
     <div class="py-5 text-center">
       <img class="d-block mx-auto mb-4" src="sitelogo.svg" alt="" width="172" height="157" />
       <h1>inet-ip.info</h1>
-      <p class="lead">
-        This website is a web service that allows you to check your current IP address. It is a web service written in the Go language, and
-        its source code is publicly available on <a href="https://github.com/inet-ip-info/website/" class="link-underline-primary">GitHub</a
-        >. This service is particularly useful for individuals and developers who need to quickly determine their public IP address for
-        various network tasks, troubleshooting, or development purposes.
-      </p>
+      <p class="lead">{@html $t("home.welcome")}</p>
     </div>
 
     <div class="col-sm-6 mb-3">
       <div class="input-group">
-        <span class="input-group-text">Investigate</span>
+        <span class="input-group-text">{$t("home.ipButton")}</span>
         <input
           bind:value
           on:input={ipHandler}
           type="text"
           class="form-control"
-          placeholder="IPv4 address"
+          placeholder="IPv4 {$t('home.address')}"
           class:is-invalid={isInvalidIP}
           id="ipaddress"
         />
@@ -183,15 +184,15 @@
     <div class="col-md-12 col-lg-12 order-md-last">
       <h4 class="d-flex justify-content-between align-items-center mb-3">
         <span class="text-info"
-          >{#if value === "" || myIP === value}Your
-          {/if}IP address Infomation</span
+          >{#if value === "" || myIP === value}{$t("home.Your")}
+          {/if}{$t("home.IPaddressInfomation")}</span
         >
       </h4>
       <div class="border border-secondary rounded pt-3 px-3">
         <table class="table table-striped border-secondary mb-3">
           <tbody>
             <tr>
-              <th scope="row"><h4>IP address</h4></th>
+              <th scope="row"><h4>{$t("home.IPaddress")}</h4></th>
               <td><h4>{info.ipAddress}</h4></td>
             </tr>
             <tr>
@@ -205,7 +206,7 @@
             {#if info.city.Continent != null}
               {#if info.city.Continent.Names != null}
                 <tr
-                  ><th scope="row">Continent</th>
+                  ><th scope="row">{$t("home.Continent")}</th>
                   <td>{getName(info.city.Continent.Names)}</td></tr
                 >
               {/if}
@@ -213,32 +214,32 @@
             {#if info.city.Country != null}
               {#if info.city.Country.Names != null}
                 <tr
-                  ><th scope="row">Country</th>
+                  ><th scope="row">{$t("home.Country")}</th>
                   <td>{getName(info.city.Country.Names)}</td></tr
                 >
                 <tr
-                  ><th scope="row">Country ISO code</th>
+                  ><th scope="row">{$t("home.Continent")} ISO code</th>
                   <td>{info.city.Country.IsoCode}</td></tr
                 >
               {/if}
             {/if}
             {#if checkRepresentedCountry(info)}
               <tr
-                ><th scope="row">Represented Country</th>
+                ><th scope="row">{$t("home.Represented")} {$t("home.Continent")}</th>
                 <td>{getName(getRepresentedCountry(info).Names)}</td></tr
               >
               <tr
-                ><th scope="row">Represented Country ISO code</th>
+                ><th scope="row">{$t("home.Represented")} {$t("home.Country")} ISO code</th>
                 <td>{getRepresentedCountry(info).IsoCode}</td></tr
               >
             {/if}
             {#if checkRegisteredCountry(info)}
               <tr
-                ><th scope="row">Registered Country</th>
+                ><th scope="row">{$t("home.Represented")} {$t("home.Country")}</th>
                 <td>{getName(getRepresentedCountry(info).Names)}</td></tr
               >
               <tr
-                ><th scope="row">Registered Country ISO code</th>
+                ><th scope="row">{$t("home.Represented")} {$t("home.Country")} ISO code</th>
                 <td>{getRepresentedCountry(info).IsoCode}</td></tr
               >
             {/if}
@@ -246,11 +247,11 @@
               {#each info.city.Subdivisions as subdivision, i}
                 {#if subdivision.Names != null}
                   <tr
-                    ><th scope="row">Subdivision{i + 1}</th>
+                    ><th scope="row">{$t("home.Subdivision")}{i + 1}</th>
                     <td>{getName(subdivision.Names)}</td></tr
                   >
                   <tr
-                    ><th scope="row">Subdivision{i + 1} ISO code</th>
+                    ><th scope="row">{$t("home.Subdivision")}{i + 1} ISO code</th>
                     <td>{subdivision.IsoCode}</td></tr
                   >
                 {/if}
@@ -259,18 +260,18 @@
             {#if info.city.City != null}
               {#if info.city.City.Names != null}
                 <tr
-                  ><th scope="row">City</th>
+                  ><th scope="row">{$t("home.City")}</th>
                   <td>{getName(info.city.City.Names)}</td></tr
                 >
               {/if}
             {/if}
             <tr
-              ><th scope="row">Postal code</th>
+              ><th scope="row">{$t("home.PostalCode")}</th>
               <td>{info.city.Postal.Code}</td></tr
             >
             {#if info.city.Location}
               <tr
-                ><th scope="row">Location</th>
+                ><th scope="row">{$t("home.Location")}</th>
                 <td>
                   <table class="table mb-0 table-striped border-secondary table-sm">
                     <tbody>
@@ -288,42 +289,40 @@
           </tbody>
         </table>
       </div>
-      <h2 class="mt-5"><span class="glyphicon glyphicon-console" aria-hidden="true"></span> Command Line Interface</h2>
+      <h2 class="mt-5"><span class="glyphicon glyphicon-console" aria-hidden="true"></span>{$t("home.CLI")}</h2>
       <p>
-        Using the Linux curl command, you can easily retrieve your external IP address and related information. This command is extremely
-        handy for network diagnostics or for verification tasks during development.
+        {$t("home.CLIinfo1")}
       </p>
       <div class="table-responsive border border-secondary rounded pt-4 px-4 my-3">
         <table class="table table-striped">
           <thead>
             <tr>
-              <th style="width: 30%">Command</th>
+              <th style="width: 30%">{$t("home.Command")}</th>
               <th style="width: 3%"></th>
-              <th>Response</th>
+              <th>{$t("home.Response")}</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td>$ curl inet-ip.info</td>
               <td><span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span></td>
-              <td>Current IP address (e.g., {myIP}\n)</td></tr
+              <td>{$t("home.CLIres1", { myIP: myIP })}</td></tr
             >
             <tr>
               <td>$ curl inet-ip.info/ip</td>
               <td><span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span></td>
-              <td>Just the IP address in text format (e.g., {myIP})</td></tr
+              <td>{$t("home.CLIres2", { myIP: myIP })}</td></tr
             >
             <tr>
               <td>$ curl inet-ip.info/json</td>
               <td><span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span></td>
-              <td>A JSON string containing the IP address and other details</td></tr
+              <td>{$t("home.CLIres3")}</td></tr
             >
           </tbody>
         </table>
       </div>
       <p>
-        These commands are useful in various scenarios, such as network troubleshooting or verifying the IP address during application
-        development. If the command fails, check your network connection or recheck the command syntax.
+        {$t("home.CLIinfo2")}
       </p>
     </div>
   </div>
