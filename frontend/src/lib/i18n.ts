@@ -6,11 +6,6 @@ const defaltLocale = "en";
 export const locale = writable(defaltLocale);
 export const locales = Object.keys(translations);
 
-// Define the type for the translations
-interface Translations {
-  [key: string]: string;
-}
-
 // Define the type for the variables that can be used in translations
 interface Vars {
   [key: string]: string;
@@ -23,7 +18,7 @@ export const initLocate = () => {
     locale.set(storedLocale);
   } else {
     let loc = window.navigator.language.substring(0, 2);
-    if (!translations.hasOwnProperty(loc)) {
+    if (!(loc in translations)) {
       loc = defaltLocale;
     }
     locale.set(loc);
