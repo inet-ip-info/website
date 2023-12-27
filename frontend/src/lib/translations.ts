@@ -50,6 +50,22 @@ const translations: Translations = {
     "ipcalc.title": "IP Calculator",
     "ipcalc.welcome":
       "This tool takes the bit number in CIDR (Classless Inter-Domain Routing) notation as input and calculates important network information based on it, including the network address, the number of usable hosts, the subnet mask, and the broadcast address.",
+    "ipv4bycounty.welcome": `This site uses <a href="https://github.com/inet-ip-info/WorldIPv4Map" class="link-underline-primary">GitHub Actions</a> to automatically collect and aggregate the latest IP address data from multiple Regional Internet Registries (RIRs) daily. The collected data is converted into CIDR notation and subnet mask notation, and is provided in a text file format that can be easily used with Linux commands and similar tools.`,
+    "ipv4bycounty.title": "IPv4 Address CIDR by Country",
+    "ipv4bycounty.title1": "What is This IP Address List Used For?",
+    "ipv4bycounty.text1": "This IP address list is very useful for restricting network access by country in a Linux environment.",
+    "ipv4bycounty.title2": "Usage Example",
+    "ipv4bycounty.text2": `This example demonstrates how to allow only IPv4 addresses from Japan (Country Code: JP) using <code>ipset</code> and
+        <code>iptables</code>.`,
+    "ipv4bycounty.usageTitle1": "Installing ipset Command",
+    "ipv4bycounty.usageText1": "Installation command for Debian/Ubuntu-based Linux:",
+    "ipv4bycounty.usageTitle2": "Creating and Loading the CIDR File into ipset",
+    "ipv4bycounty.usageText2":
+      "First, download the file containing all IPv4 CIDR lists (all-ipv4cidr.tsv.gz), extract only the Japanese IPv4 addresses to create the CIDR file, and then load this file into ipset.",
+    "ipv4bycounty.usageTitle3": "Allowing Specific Ports with iptables",
+    "ipv4bycounty.usageText3":
+      "Finally, use iptables to allow only specific UDP ports (for example, 26900-26903) for IP addresses included in the $SETNAME ipset.",
+    "ipv4bycounty.endText": "By using this setup, you can easily allow access only from IP addresses of a specific country.",
   },
   ja: {
     "home.title": "inet-ip.info",
@@ -89,6 +105,21 @@ const translations: Translations = {
     "ipcalc.title": "IP計算機",
     "ipcalc.welcome":
       "このツールは、CIDR（クラスレス・インタードメイン・ルーティング）表記のビット数を入力として受け取り、それに基づいて重要なネットワーク情報を計算します。これには、ネットワークアドレス、使用可能なホストの数、サブネットマスク、ブロードキャストアドレスが含まれます。",
+    "ipv4bycounty.welcome": `このサイトは<a href="https://github.com/inet-ip-info/WorldIPv4Map/blob/main/README.jp.md" class="link-underline-primary">GitHub Actions</a>を使用して、複数の地域インターネットレジストリ（RIR）から最新のIPアドレスデータを毎日自動的に収集し集約します。収集されたデータはCIDR表記とサブネットマスク表記に変換され、Linuxコマンドや類似ツールで簡単に使用できるテキストファイル形式で提供されます。`,
+    "ipv4bycounty.title": "国別IPv4アドレスCIDR",
+    "ipv4bycounty.title1": "このIPアドレスリストは何に使われますか？",
+    "ipv4bycounty.text1": "このIPアドレスリストは、Linux環境で国別にネットワークアクセスを制限するのに非常に役立ちます。",
+    "ipv4bycounty.title2": "使用例",
+    "ipv4bycounty.text2": `この例は、<code>ipset</code>と<code>iptables</code>を使用して、日本（国コード：JP）のIPv4アドレスのみを許可する方法を示しています。`,
+    "ipv4bycounty.usageTitle1": "ipsetコマンドのインストール",
+    "ipv4bycounty.usageText1": "Debian/UbuntuベースのLinux用のインストールコマンド：",
+    "ipv4bycounty.usageTitle2": "CIDRファイルをipsetに作成し読み込む",
+    "ipv4bycounty.usageText2":
+      "まず、全てのIPv4 CIDRリストを含むファイル（all-ipv4cidr.tsv.gz）をダウンロードし、日本のIPv4アドレスだけを抽出してCIDRファイルを作成し、その後このファイルをipsetに読み込みます。",
+    "ipv4bycounty.usageTitle3": "iptablesで特定のポートを許可する",
+    "ipv4bycounty.usageText3":
+      "最後に、iptablesを使用して、$SETNAME ipsetに含まれるIPアドレスに対して特定のUDPポート（例えば、26900-26903）のみを許可します。",
+    "ipv4bycounty.endText": "この設定を使用することで、特定の国のIPアドレスからのアクセスのみを簡単に許可できます。",
   },
 };
 

@@ -1,41 +1,38 @@
 <script lang="ts">
+  import { t, initLocate } from "$lib/i18n";
+  import { onMount } from "svelte";
+  onMount(initLocate);
 </script>
 
 <div class="py-5 text-center">
-  <h1>IPv4 Address CIDR by Country</h1>
-  <p class="lead">
-    This site uses <a href="https://github.com/inet-ip-info/WorldIPv4Map" class="link-underline-primary">GitHub Actions</a> to automatically
-    collect and aggregate the latest IP address data from multiple Regional Internet Registries (RIRs) daily. The collected data is converted
-    into CIDR notation and subnet mask notation, and is provided in a text file format that can be easily used with Linux commands and similar
-    tools.
-  </p>
+  <h1>{$t("ipv4bycounty.title")}</h1>
+  <p class="lead">{@html $t("ipv4bycounty.welcome")}</p>
+</div>
+<div class="container text-center">
+  <h4>
+    file: <a a href="https://github.com/inet-ip-info/WorldIPv4Map/releases/latest/download/all-ipv4cidr.tsv.gz">all-ipv4cidr.tsv.gz</a>
+  </h4>
 </div>
 <div class="container my-5">
   <div class="my-3 mb-4">
-    <h2 class="title">What is This IP Address List Used For?</h2>
+    <h2 class="title">{$t("ipv4bycounty.title1")}</h2>
     <div class="body">
-      <p class="text">This IP address list is very useful for restricting network access by country in a Linux environment.</p>
+      <p class="text">{$t("ipv4bycounty.text1")}</p>
     </div>
   </div>
   <div class="my-3 mb-4">
     <div class="body">
-      <h2 class="title">Usage Example</h2>
-      <p class="text">
-        This example demonstrates how to allow only IPv4 addresses from Japan (Country Code: JP) using <code>ipset</code> and
-        <code>iptables</code>.
-      </p>
+      <h2 class="title">{$t("ipv4bycounty.title2")}</h2>
+      <p class="text">{@html $t("ipv4bycounty.text2")}</p>
       <ol>
         <li>
-          <strong>Installing ipset Command</strong>
-          <p class="text">Installation command for Debian/Ubuntu-based Linux:</p>
+          <strong>{$t("ipv4bycounty.usageTitle1")}</strong>
+          <p class="text">{$t("ipv4bycounty.usageText1")}</p>
           <pre class="border rounded m-2 p-2 bg-dark text-white mb-4"><code>apt install -y ipset</code></pre>
         </li>
         <li>
-          <strong>Creating and Loading the CIDR File into ipset</strong>
-          <p class="text">
-            First, download the file containing all IPv4 CIDR lists (all-ipv4cidr.tsv.gz), extract only the Japanese IPv4 addresses to
-            create the CIDR file, and then load this file into ipset.
-          </p>
+          <strong>{$t("ipv4bycounty.usageTitle2")}</strong>
+          <p class="text">{$t("ipv4bycounty.usageText2")}</p>
           <pre class="border rounded m-2 p-2 bg-dark text-white mb-4"><code
               >{`URL=https://github.com/inet-ip-info/WorldIPv4Map/releases/latest/download/all-ipv4cidr.tsv.gz
 CIDRFILE=/var/lib/ipset/ipset_list
@@ -58,11 +55,8 @@ done <$${"CIDRFILE"}`}</code
             ></pre>
         </li>
         <li>
-          <strong>Allowing Specific Ports with iptables</strong>
-          <p class="text">
-            Finally, use iptables to allow only specific UDP ports (for example, 26900-26903) for IP addresses included in the $SETNAME
-            ipset.
-          </p>
+          <strong>{$t("ipv4bycounty.usageTitle3")}</strong>
+          <p class="text">{$t("ipv4bycounty.usageText3")}</p>
           <pre class="border rounded m-2 p-2 bg-dark text-white mb-4"><code
               >{`# UDP (26900-26903)
 /sbin/iptables -A INPUT -p udp --dport 26900:26903 -m set --match-set $${"SETNAME"} src -j ACCEPT
@@ -70,7 +64,7 @@ done <$${"CIDRFILE"}`}</code
             ></pre>
         </li>
       </ol>
-      <p class="text">By using this setup, you can easily allow access only from IP addresses of a specific country.</p>
+      <p class="text">{$t("ipv4bycounty.endText")}</p>
     </div>
   </div>
 </div>
