@@ -5,13 +5,17 @@
   import { javascript } from "@codemirror/lang-javascript";
   import { oneDark } from "@codemirror/theme-one-dark";
   import { EditorView } from "@codemirror/view";
+  import { split } from "shlex";
 
+  let cliInput = "";
+  let stdinInput = "";
   let value = "...";
+  let errorMessage: string = "";
 
   let cli: any;
-  const run = async (stdin: string, arg: string) => {
+  const run = async (stdin: string, command: string, arg: string[]) => {
     cli.stdin = stdin;
-    value = await cli.exec(arg);
+    value = await cli.exec(command, arg);
   };
 
   onMount(async () => {
@@ -51,6 +55,23 @@
     console.log(`Clicked element ID: ${elementId}`);
     tab = elementId;
   };
+  const changeHandler = (event: Event) => {
+    try {
+      let args = split(cliInput);
+      //console.debug(`args:`, args);
+      let command = args[0];
+      args.shift();
+      run(stdinInput, command, args);
+      errorMessage = "";
+    } catch (error) {
+      if (error instanceof Error) {
+        //console.debug(`err:`, error);
+        errorMessage = error.message;
+      } else {
+        errorMessage = String(error);
+      }
+    }
+  };
 </script>
 
 <svelte:head>
@@ -60,15 +81,6 @@
 
 <div class="mx-5">
   <main>
-    <button
-      on:click={() => {
-        run("hogehogehoge aheahe", "sed s/hoge/fuga/g");
-      }}
-    >
-      run sed
-    </button>
-    <div class="py-2 text-center"></div>
-
     <div class="border rounded">
       <ul class="nav nav-tabs" id="myTab" role="tablist">
         <li class="nav-item" role="presentation">
@@ -102,12 +114,16 @@
         <div class="px-2 py-3 mx-1">
           <h3>sed</h3>
           command line: input:
-          <CodeMirror basic={false} bind:value lang={javascript()} {theme} />
-
+          <CodeMirror basic={false} bind:value={cliInput} on:change={changeHandler} lang={javascript()} {theme} />
+          {#if errorMessage !== ""}
+            <div class="p-2 text-danger-emphasis bg-danger-subtle border border-danger-subtle rounded-3">
+              {errorMessage}
+            </div>
+          {/if}
           <div class="row">
             <div class="col">
-              input:
-              <CodeMirror bind:value lang={javascript()} {theme} />
+              stdin:
+              <CodeMirror bind:value={stdinInput} lang={javascript()} {theme} />
             </div>
             <div class="col">
               output:
