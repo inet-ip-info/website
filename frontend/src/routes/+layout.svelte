@@ -89,6 +89,9 @@
         <li class="nav-item">
           <a class="nav-link" href="/IPv4byCountry">IPv4 by Country</a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/playground">CLI playground</a>
+        </li>
       </ul>
       {#if ip !== ""}
         <div class="d-flex custom-input-container">
@@ -100,10 +103,8 @@
   </div>
 </nav>
 
-<div class="container">
-  <slot />
-  <!-- ここに各ページのコンテンツが挿入されます -->
-</div>
+<slot />
+<!-- ここに各ページのコンテンツが挿入されます -->
 
 <footer>
   <!-- フッターの内容 -->
@@ -133,9 +134,6 @@
   }
   .bd-mode-toggle {
     z-index: 1500;
-  }
-  .container {
-    max-width: 960px;
   }
   .custom-input-container {
     width: 270px; /* ここに希望の幅を設定 */
