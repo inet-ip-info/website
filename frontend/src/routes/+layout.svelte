@@ -94,7 +94,7 @@
         </li>
       </ul>
       {#if ip !== ""}
-        <div class="d-flex custom-input-container">
+        <div class="d-flex custom-input-container text-white">
           <span class="px-1">Your IP address: </span>
           <p class="px-1 m-0 border rounded">{ip}</p>
         </div>
