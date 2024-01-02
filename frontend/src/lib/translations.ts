@@ -66,6 +66,23 @@ const translations: Translations = {
     "ipv4bycounty.usageText3":
       "Finally, use iptables to allow only specific UDP ports (for example, 26900-26903) for IP addresses included in the $SETNAME ipset.",
     "ipv4bycounty.endText": "By using this setup, you can easily allow access only from IP addresses of a specific country.",
+    "cliplayground.title": "CLI Command Playground",
+    "cliplayground.welcome": `Use text processing commands <code>sed</code>, <code>grep</code>, <code>awk</code>, <code>jq</code> safely and intuitively on a web browser`,
+    "cliplayground.description": `<p>These tools, compiled into WebAssembly, allow you to experiment with text manipulation easily without sending any data to the server.</p>
+            <h5>Features:</h5>
+            <ul><li><strong>Compiled from the Original Source Code: ...</strong> <code>sed</code>, <code>grep</code>, <code>awk</code>,
+                <code>jq</code> are compiled from their original sources, ensuring perfect compatibility in operation.
+            </li></ul>
+            <ul><li>
+                <strong>Accurate Replication of Escape Processing: ...</strong> Faithfully replicates the escape processing of shell command lines, making it ideal for testing the behavior of command-line arguments.
+            </li></ul>
+            <ul><li>
+                <strong>Safety: ...</strong> No need to send test data to the server, as everything is completed in the browser, ensuring safe usage.
+            </li></ul>
+            <ul><li>
+                <strong>Convenient Save Feature: ...</strong> Your executions are saved in the browser's local storage, making reuse easy.
+            </li></ul>
+            This playground is the perfect place for those who want to polish their programming skills and explore the depths of CLI commands. Start now and expand the possibilities of text processing!`,
   },
   ja: {
     "home.title": "inet-ip.info",
@@ -120,6 +137,23 @@ const translations: Translations = {
     "ipv4bycounty.usageText3":
       "最後に、iptablesを使用して、$SETNAME ipsetに含まれるIPアドレスに対して特定のUDPポート（例えば、26900-26903）のみを許可します。",
     "ipv4bycounty.endText": "この設定を使用することで、特定の国のIPアドレスからのアクセスのみを簡単に許可できます。",
+    "cliplayground.title": "CLI コマンド プレイグラウンド",
+    "cliplayground.welcome": `Webブラウザ上でテキスト処理コマンド </strong> <code>sed</code>, <code>grep</code>, <code>awk</code>, <code>jq</code> を安全かつ直感的に使えます`,
+    "cliplayground.description": `<p>サーバーにデータを送信することなく、WebAssemblyにコンパイルされたこれらのツールを利用して、手軽にテキスト加工の実験が可能です。</p>
+              <h5>特長：</h5>
+              <ul><li><strong>オリジナルのソースコードからコンパイル: ...</strong> <code>sed</code>, <code>grep</code>, <code>awk</code>,
+                  <code>jq</code>のそれぞれがオリジナルソースからコンパイルされているため、動作の互換性は完璧です。
+              </li></ul>
+              <ul><li>
+                  <strong>エスケープ処理の再現: ...</strong> シェルのコマンドラインのエスケープ処理を忠実に再現。コマンドライン引数の動作テストに最適です。
+              </li></ul>
+              <ul><li>
+                  <strong>安全性: ...</strong> サーバーへのテストデータ送信が不要で、ブラウザ上で完結するため、安全に利用できます。
+              </li></ul>
+              <ul><li>
+                  <strong>便利な保存機能: ...</strong> あなたの実行内容はブラウザのローカルストレージに保存され、再利用が簡単です。
+              </li></ul>
+              プログラミングのスキルを磨きたい方、CLIコマンドの奥深さを探求したい方には、このプレイグラウンドが最適な場所です。今すぐ始めて、テキスト処理の可能性を広げましょう！`,
   },
 };
 

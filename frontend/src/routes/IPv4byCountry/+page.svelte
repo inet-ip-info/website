@@ -11,7 +11,7 @@
   </div>
   <div class="container text-center">
     <h4>
-      file: <a a href="https://github.com/inet-ip-info/WorldIPv4Map/releases/latest/download/all-ipv4cidr.tsv.gz">all-ipv4cidr.tsv.gz</a>
+      file: <a href="https://github.com/inet-ip-info/WorldIPv4Map/releases/latest/download/all-ipv4cidr.tsv.gz">all-ipv4cidr.tsv.gz</a>
     </h4>
   </div>
   <div class="container my-5">
