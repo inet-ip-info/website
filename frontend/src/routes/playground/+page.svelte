@@ -15,6 +15,7 @@
   let errorMessage: string = "";
   let tab = "";
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let cli: any;
 
   type inputStore = {
@@ -22,6 +23,7 @@
     stdinInput: string;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const aioliMap: any = {
     "sed-CLI": ["base/1.0.0", { tool: "sed", version: "4.8", reinit: true }],
     "grep-CLI": ["base/1.0.0", { tool: "grep", version: "3.7", reinit: true }],
@@ -181,10 +183,11 @@ Polar Bear: Arctic`,
       }
     }
   };
-  const changeHandler = (event: Event) => {
+  const changeHandler = (/*event: Event*/) => {
     runCommand();
   };
   const rmESC = (text: string): string => {
+    // eslint-disable-next-line no-control-regex
     const escapeSequenceRegex = /\x1b\[[0-9;]*m/g;
     return text.replace(escapeSequenceRegex, "");
   };
@@ -195,6 +198,7 @@ Polar Bear: Arctic`,
   <script src="https://biowasm.com/cdn/v3/aioli.js"></script>
 </svelte:head>
 
+<!-- eslint-disable svelte/no-at-html-tags  -->
 <main>
   <div class="mx-5 py-2" transition:blur={{ opacity: 1000 }}>
     <div class="py-2 text-center">

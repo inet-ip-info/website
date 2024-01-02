@@ -4,6 +4,7 @@
   onMount(initLocate);
 </script>
 
+<!-- eslint-disable svelte/no-at-html-tags  -->
 <div class="container">
   <div class="py-5 text-center">
     <h1>{$t("ipv4bycounty.title")}</h1>
