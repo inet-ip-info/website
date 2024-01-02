@@ -67,7 +67,8 @@ const translations: Translations = {
       "Finally, use iptables to allow only specific UDP ports (for example, 26900-26903) for IP addresses included in the $SETNAME ipset.",
     "ipv4bycounty.endText": "By using this setup, you can easily allow access only from IP addresses of a specific country.",
     "cliplayground.title": "CLI Command Playground",
-    "cliplayground.welcome": `Use text processing commands <code>sed</code>, <code>grep</code>, <code>awk</code>, <code>jq</code> safely and intuitively on a web browser`,
+    "cliplayground.welcome": `Safely and intuitively try out text processing commands <code>sed</code>, <code>grep</code>, <code>awk</code>, <code>jq</code> on a web browser`,
+    "cliplayground.welcomeMini": `Text processing commands can be tested safely and intuitively.`,
     "cliplayground.description": `<p>These tools, compiled into WebAssembly, allow you to experiment with text manipulation easily without sending any data to the server.</p>
             <h5>Features:</h5>
             <ul><li><strong>Compiled from the Original Source Code: ...</strong> <code>sed</code>, <code>grep</code>, <code>awk</code>,
@@ -138,7 +139,8 @@ const translations: Translations = {
       "最後に、iptablesを使用して、$SETNAME ipsetに含まれるIPアドレスに対して特定のUDPポート（例えば、26900-26903）のみを許可します。",
     "ipv4bycounty.endText": "この設定を使用することで、特定の国のIPアドレスからのアクセスのみを簡単に許可できます。",
     "cliplayground.title": "CLI コマンド プレイグラウンド",
-    "cliplayground.welcome": `Webブラウザ上でテキスト処理コマンド </strong> <code>sed</code>, <code>grep</code>, <code>awk</code>, <code>jq</code> を安全かつ直感的に使えます`,
+    "cliplayground.welcome": `Webブラウザ上でテキスト処理コマンド </strong> <code>sed</code>, <code>grep</code>, <code>awk</code>, <code>jq</code> を安全かつ直感的に試せます`,
+    "cliplayground.welcomeMini": `テキスト処理コマンドを安全かつ直感的に試せます`,
     "cliplayground.description": `<p>サーバーにデータを送信することなく、WebAssemblyにコンパイルされたこれらのツールを利用して、手軽にテキスト加工の実験が可能です。</p>
               <h5>特長：</h5>
               <ul><li><strong>オリジナルのソースコードからコンパイル: ...</strong> <code>sed</code>, <code>grep</code>, <code>awk</code>,
