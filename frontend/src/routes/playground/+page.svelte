@@ -29,7 +29,7 @@
     "sed-CLI": ["base/1.0.0", { tool: "sed", version: "4.8", reinit: true }],
     "grep-CLI": ["base/1.0.0", { tool: "grep", version: "3.7", reinit: true }],
     "awk-CLI": ["base/1.0.0", { tool: "gawk", version: "5.1.0", reinit: true }],
-    "jq-CLI": ["jq/1.7"],
+    "jq-CLI": ["base/1.0.0", { tool: "jq", version: "1.7", reinit: true }],
   };
 
   const defaultStrings: { [key: string]: inputStore } = {
@@ -57,8 +57,12 @@ Polar Bear: Arctic`,
 2024-01-01 12:33:00 Server1 Status: Inactive`,
     },
     "jq-CLI": {
-      cliInput: "jq '.[][][]'",
-      stdinInput: `{"servers":[{"name":"Server1","status":"Active"},{"name":"Server2","status":"Inactive"},{"name":"Server3","status":"Active"}]}`,
+      cliInput: "jq '.[]'",
+      stdinInput: `{ "servers":[
+  {"name":"Server1","status":"Active"},
+  {"name":"Server2","status":"Inactive"},
+  {"name":"Server3","status":"Active"}
+]}`,
     },
   };
 
