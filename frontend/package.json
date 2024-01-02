@@ -24,6 +24,7 @@
     "@types/netmask": "^2.0.5",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "cm6-theme-solarized-light": "^0.2.0",
     "eslint": "^8.28.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-svelte": "^2.30.0",

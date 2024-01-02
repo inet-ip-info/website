@@ -4,6 +4,7 @@
   import CodeMirror from "svelte-codemirror-editor";
   import { javascript } from "@codemirror/lang-javascript";
   import { oneDark } from "@codemirror/theme-one-dark";
+  import { solarizedLight } from "cm6-theme-solarized-light";
   import { EditorView } from "@codemirror/view";
   import { split } from "shlex";
   import { t, initLocate } from "$lib/i18n";
@@ -145,7 +146,9 @@ Polar Bear: Arctic`,
   let theme = EditorView.theme({});
   const updateThemeBasedOnSystemSettings = () => {
     const currentTheme = document.documentElement.getAttribute("data-bs-theme");
-    theme = currentTheme === "dark" ? oneDark : EditorView.theme({});
+    //theme = currentTheme === "dark" ? oneDark : EditorView.theme({});
+    theme = currentTheme === "dark" ? oneDark : solarizedLight;
+    //theme = currentTheme === "dark" ? oneDark : basicLight;
   };
   onMount(() => {
     updateThemeBasedOnSystemSettings();
@@ -281,8 +284,8 @@ Polar Bear: Arctic`,
             >
           </li>
         </ul>
-        {#if tab === "sed-CLI"}
-          <div class="px-2 py-3 mx-1">
+        <div class="px-2 py-3 mx-1 bg-body">
+          {#if tab === "sed-CLI"}
             <h3>sed (4.8)</h3>
             command line input:
             <CodeMirror basic={false} bind:value={cliInput} on:change={changeHandler} lang={javascript()} {theme} />
@@ -301,9 +304,7 @@ Polar Bear: Arctic`,
                 <CodeMirror bind:value lang={javascript()} {theme} />
               </div>
             </div>
-          </div>
-        {:else if tab === "grep-CLI"}
-          <div class="px-2 py-3 mx-1">
+          {:else if tab === "grep-CLI"}
             <h3>grep (3.7)</h3>
             Command line input:
             <CodeMirror basic={false} bind:value={cliInput} on:change={changeHandler} lang={javascript()} {theme} />
@@ -322,9 +323,7 @@ Polar Bear: Arctic`,
                 <CodeMirror bind:value lang={javascript()} {theme} />
               </div>
             </div>
-          </div>
-        {:else if tab === "awk-CLI"}
-          <div class="px-2 py-3 mx-1">
+          {:else if tab === "awk-CLI"}
             <h3>awk (gawk/5.1.0)</h3>
             Command line input:
             <CodeMirror basic={false} bind:value={cliInput} on:change={changeHandler} lang={javascript()} {theme} />
@@ -343,9 +342,7 @@ Polar Bear: Arctic`,
                 <CodeMirror bind:value lang={javascript()} {theme} />
               </div>
             </div>
-          </div>
-        {:else if tab === "jq-CLI"}
-          <div class="px-2 py-3 mx-1">
+          {:else if tab === "jq-CLI"}
             <h3>jq (1.7)</h3>
             Command line input:
             <CodeMirror basic={false} bind:value={cliInput} on:change={changeHandler} lang={javascript()} {theme} />
@@ -364,8 +361,8 @@ Polar Bear: Arctic`,
                 <CodeMirror bind:value lang={javascript()} {theme} />
               </div>
             </div>
-          </div>
-        {/if}
+          {/if}
+        </div>
       </div>
     {/if}
   </div>
