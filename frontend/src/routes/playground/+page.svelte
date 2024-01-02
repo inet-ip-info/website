@@ -34,14 +34,14 @@
 
   const defaultStrings: { [key: string]: inputStore } = {
     "sed-CLI": {
-      cliInput: "sed --help",
+      cliInput: "sed '2{N;s/\\n//;}'",
       stdinInput: `hello
 hel
 lo
 hello`,
     },
     "grep-CLI": {
-      cliInput: "grep --help",
+      cliInput: "grep 'A.*ca'",
       stdinInput: `Lion: Africa
 Tiger: Asia
 Elephant: Africa
@@ -50,21 +50,15 @@ Giraffe: Africa
 Polar Bear: Arctic`,
     },
     "awk-CLI": {
-      cliInput: "awk --help",
+      cliInput: "awk '{print $2,$3}'",
       stdinInput: `2024-01-01 12:30:45 Server1 Status: Active
 2024-01-01 12:31:10 Server2 Status: Inactive
 2024-01-01 12:32:05 Server3 Status: Active
 2024-01-01 12:33:00 Server1 Status: Inactive`,
     },
     "jq-CLI": {
-      cliInput: "jq --help",
-      stdinInput: `{
-  "servers": [
-    {"name": "Server1", "status": "Active"},
-    {"name": "Server2", "status": "Inactive"},
-    {"name": "Server3", "status": "Active"}
-  ]
-}`,
+      cliInput: "jq '.[][][]'",
+      stdinInput: `{"servers":[{"name":"Server1","status":"Active"},{"name":"Server2","status":"Inactive"},{"name":"Server3","status":"Active"}]}`,
     },
   };
 
@@ -299,7 +293,7 @@ Polar Bear: Arctic`,
             <div class="row">
               <div class="col">
                 Stdin:
-                <CodeMirror bind:value={stdinInput} lang={javascript()} {theme} />
+                <CodeMirror bind:value={stdinInput} on:change={changeHandler} lang={javascript()} {theme} />
               </div>
               <div class="col">
                 Output:
@@ -318,7 +312,7 @@ Polar Bear: Arctic`,
             <div class="row">
               <div class="col">
                 Stdin:
-                <CodeMirror bind:value={stdinInput} lang={javascript()} {theme} />
+                <CodeMirror bind:value={stdinInput} on:change={changeHandler} lang={javascript()} {theme} />
               </div>
               <div class="col">
                 Output:
@@ -337,7 +331,7 @@ Polar Bear: Arctic`,
             <div class="row">
               <div class="col">
                 Stdin:
-                <CodeMirror bind:value={stdinInput} lang={javascript()} {theme} />
+                <CodeMirror bind:value={stdinInput} on:change={changeHandler} lang={javascript()} {theme} />
               </div>
               <div class="col">
                 Output:
@@ -356,7 +350,7 @@ Polar Bear: Arctic`,
             <div class="row">
               <div class="col">
                 Stdin:
-                <CodeMirror bind:value={stdinInput} lang={javascript()} {theme} />
+                <CodeMirror bind:value={stdinInput} on:change={changeHandler} lang={javascript()} {theme} />
               </div>
               <div class="col">
                 Output:
