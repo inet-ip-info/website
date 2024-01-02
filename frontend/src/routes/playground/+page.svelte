@@ -204,13 +204,13 @@ Polar Bear: Arctic`,
 </script>
 
 <svelte:head>
-  <title>hogehoge</title>
+  <title>{$t("cliplayground.title")}</title>
   <script src="https://biowasm.com/cdn/v3/aioli.js"></script>
 </svelte:head>
 
 <!-- eslint-disable svelte/no-at-html-tags  -->
 <main>
-  <div class="mx-5 py-2" transition:blur={{ opacity: 1000 }}>
+  <div class="mx-md-5 py-md-2" transition:blur={{ opacity: 1000 }}>
     <div class="py-2 text-center">
       <h3 class="">{$t("cliplayground.title")}</h3>
       <div class="accordion" id="accordion1">
@@ -222,7 +222,9 @@ Polar Bear: Arctic`,
               data-bs-toggle="collapse"
               data-bs-target="#collapseOne"
               aria-expanded="true"
-              aria-controls="collapseOne">{@html $t("cliplayground.welcome")}</button
+              aria-controls="collapseOne"
+              ><div class="d-none d-md-block">{@html $t("cliplayground.welcome")}</div>
+              <div class="d-block d-md-none">{$t("cliplayground.welcomeMini")}</div></button
             >
           </h2>
           <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#accordion1">
