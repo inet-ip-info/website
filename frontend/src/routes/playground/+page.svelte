@@ -124,13 +124,20 @@ Polar Bear: Arctic`,
     cli = await new window.Aioli(arg, { printInterleaved: false });
   };
 
-  onMount(async () => {
-    initLocate();
-    if (browser && window.Aioli) {
-      tab = getStoreTab();
+  const init = async () => {
+    if (window.Aioli) {
       getValue();
       await loadAioli(tab);
       runCommand();
+    } else {
+      setTimeout(init, 1000);
+    }
+  };
+  onMount(async () => {
+    if (browser) {
+      initLocate();
+      tab = getStoreTab();
+      init();
     }
   });
 
