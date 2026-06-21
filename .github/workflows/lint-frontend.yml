@@ -4,10 +4,15 @@ on:
   push:
     paths:
       - "frontend/**"
+      - ".github/workflows/lint-frontend.yml"
+  pull_request:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/lint-frontend.yml"
+  workflow_dispatch:
 
 permissions:
-  checks: write
-  contents: write
+  contents: read
 
 jobs:
   run-linters:
@@ -20,26 +25,22 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
-      # ESLint and Prettier must be in `package.json`
       - name: Install Node.js dependencies
-        run: |
-          npm install -g npm@latest
-          npm i
+        run: npm ci
         working-directory: ./frontend
 
-      - name: Run linters
-        uses: wearerequired/lint-action@v2
-        with:
-          prettier: true
-          eslint: true
-          eslint_extensions: "js,json,ts,svelte"
-          eslint_args: "-c .eslintrc.cjs"
-          eslint_auto_fix: true
-          eslint_dir: ./frontend
-          prettier_extensions: "svelte,js,json,ts,md,html"
-          prettier_args: "--config .prettierrc --ignore-path ./.prettierignore"
-          prettier_auto_fix: true
-          prettier_dir: ./frontend
+      - name: Run Prettier
+        run: npm run lint
+        working-directory: ./frontend
+
+      - name: Type check
+        run: npm run check
+        working-directory: ./frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: ./frontend

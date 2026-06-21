@@ -1,0 +1,1 @@
+This file keeps the old embedded build directory non-empty for go:embed.
