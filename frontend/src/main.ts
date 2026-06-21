@@ -1051,6 +1051,16 @@ if (!appRoot) {
 const app: HTMLDivElement = appRoot;
 const page = (app.dataset.page ?? "home") as PageName;
 
+function markAppReady(): void {
+  if (document.documentElement.classList.contains("app-ready")) return;
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      document.documentElement.classList.remove("app-loading");
+      document.documentElement.classList.add("app-ready");
+    });
+  });
+}
+
 function renderShell(content: string): void {
   setDocumentMetadata();
   app.innerHTML = `
@@ -1504,11 +1514,7 @@ async function initHome(): Promise<void> {
     renderCommandRows(currentIp);
   }
 
-  await fetchIpInfo()
-    .then(update)
-    .catch(() => {
-      setMessage(t("message.lookupFailed"));
-    });
+  const readyFallback = window.setTimeout(markAppReady, 1200);
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1542,6 +1548,16 @@ async function initHome(): Promise<void> {
         setMessage(t("message.lookupFailed"));
       });
   });
+
+  await fetchIpInfo()
+    .then(update)
+    .catch(() => {
+      setMessage(t("message.lookupFailed"));
+    })
+    .finally(() => {
+      window.clearTimeout(readyFallback);
+      markAppReady();
+    });
 }
 
 function updateMapTarget(info: IpInfo): void {
@@ -1860,10 +1876,14 @@ function requiredElement<T extends Element = HTMLElement>(selector: string): T {
 }
 
 function renderPage(): void {
-  if (page === "home") renderHome();
+  if (page === "home") {
+    renderHome();
+    return;
+  }
   if (page === "ipcalc") renderIpcalc();
   if (page === "country") renderCountry();
   if (page === "playground") renderPlayground();
+  markAppReady();
 }
 
 renderPage();

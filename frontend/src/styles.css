@@ -30,6 +30,16 @@ body {
   letter-spacing: 0;
 }
 
+#app {
+  min-height: 100svh;
+  opacity: 1;
+  transition: opacity 180ms ease-out;
+}
+
+html.app-loading #app {
+  opacity: 0;
+}
+
 button,
 input,
 textarea,
@@ -881,6 +891,10 @@ textarea:focus {
   *::after {
     scroll-behavior: auto !important;
     transition: none !important;
+  }
+
+  #app {
+    transition: none;
   }
 }
 
