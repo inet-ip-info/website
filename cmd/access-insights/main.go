@@ -24,7 +24,10 @@ import (
 
 const (
 	outputPath            = "/var/lib/inet-ip-info/access-insights.json"
+	dailyAggregateDir     = "/var/lib/inet-ip-info/access-insights-days"
 	defaultAccessPeriod   = "24h"
+	aggregateVersion      = 1
+	retainedBackfillDays  = 14
 	topN                  = 8
 	topCountryN           = 200
 	topLocationN          = 200
@@ -38,7 +41,12 @@ const (
 	defaultHistoricalEstimatesPath = "/var/lib/inet-ip-info/access-insights-history.json"
 )
 
-var logPaths = []string{
+var dailyLogPaths = []string{
+	"/var/log/nginx/inet-ip.info.access.log.1",
+	"/var/log/nginx/inet-ip.info.access.log.2.gz",
+}
+
+var bootstrapLogPaths = []string{
 	"/var/log/nginx/inet-ip.info.access.log",
 	"/var/log/nginx/inet-ip.info.access.log.1",
 	"/var/log/nginx/inet-ip.info.access.log.2.gz",
@@ -82,6 +90,27 @@ type dayAggregate struct {
 	geoUnresolved int64
 	firstSeen     time.Time
 	lastSeen      time.Time
+}
+
+type storedDayAggregate struct {
+	Version         int                    `json:"version"`
+	Day             string                 `json:"day"`
+	Midnight        string                 `json:"midnight"`
+	Total           int64                  `json:"total"`
+	Success         int64                  `json:"success"`
+	UniquePrecision uint8                  `json:"uniquePrecision"`
+	UniqueRegisters []byte                 `json:"uniqueRegisters"`
+	Countries       map[string]countryRow  `json:"countries"`
+	Locations       map[string]locationRow `json:"locations"`
+	ASNs            map[string]asnRow      `json:"asns"`
+	Endpoints       map[string]int64       `json:"endpoints"`
+	UserAgents      map[string]int64       `json:"userAgents"`
+	Status          map[string]int64       `json:"status"`
+	Hours           map[string]int64       `json:"hours"`
+	GeoResolved     int64                  `json:"geoResolved"`
+	GeoUnresolved   int64                  `json:"geoUnresolved"`
+	FirstSeen       string                 `json:"firstSeen"`
+	LastSeen        string                 `json:"lastSeen"`
 }
 
 type combinedAggregate struct {
@@ -216,25 +245,55 @@ func main() {
 	log.Printf("access insights build start output=%s", outputPath)
 
 	now := time.Now()
+	dayDir := accessDailyAggregateDir()
+	storedDays, err := loadStoredDays(dayDir)
+	if err != nil {
+		log.Fatalf("load stored daily aggregates failed: %v", err)
+	}
+	wantedDays := wantedAggregateDays(now, storedDays)
+	inputPaths := dailyLogPaths
+	mode := "daily"
+	if needsBackfill(wantedDays, dailyTargetDay(now)) || forceBackfill() {
+		inputPaths = bootstrapLogPaths
+		mode = "backfill"
+	}
+	log.Printf("daily aggregate mode=%s dir=%s wanted_days=%s inputs=%s", mode, dayDir, strings.Join(sortedDayKeys(wantedDays), ","), sourceLabel(inputPaths))
+
 	geoResolver, err := newGeoResolver()
 	if err != nil {
 		log.Fatalf("open geoip databases failed: %v", err)
 	}
 	defer geoResolver.Close()
 
-	days := map[string]*dayAggregate{}
-	for _, path := range logPaths {
-		lines, records, err := readLog(path, days, geoResolver)
+	parsedDays := map[string]*dayAggregate{}
+	for _, path := range inputPaths {
+		lines, records, err := readLog(path, parsedDays, geoResolver, wantedDays)
 		if err != nil {
 			log.Fatalf("read %s failed: %v", path, err)
 		}
-		log.Printf("read complete path=%s lines=%d records=%d days=%d elapsed=%s", path, lines, records, len(days), time.Since(start).Round(time.Second))
+		log.Printf("read complete path=%s lines=%d matched_records=%d parsed_days=%d elapsed=%s", path, lines, records, len(parsedDays), time.Since(start).Round(time.Second))
+	}
+	for _, day := range sortedDays(parsedDays) {
+		if err := writeStoredDay(dayDir, day); err != nil {
+			log.Fatalf("write daily aggregate failed day=%s: %v", day.day, err)
+		}
+		log.Printf("daily aggregate stored day=%s requests=%d", day.day, day.total)
+	}
+	if len(parsedDays) == 0 {
+		log.Printf("no new daily aggregates were written")
 	}
 
-	orderedDays := sortedDays(days)
+	storedDays, err = loadStoredDays(dayDir)
+	if err != nil {
+		log.Fatalf("reload stored daily aggregates failed: %v", err)
+	}
+	orderedDays := sortedDays(storedDays)
+	if len(orderedDays) == 0 {
+		log.Fatal("no stored daily aggregates available")
+	}
 	log.Printf("aggregate complete days=%d geo_cache_entries=%d elapsed=%s", len(orderedDays), geoResolver.cacheSize(), time.Since(start).Round(time.Second))
 
-	source := sourceLabel(logPaths)
+	source := storedSourceLabel(dayDir, orderedDays)
 	generatedAt := now.Format(time.RFC3339)
 	specs := periodSpecs(now)
 	periods := make([]periodDocument, 0, len(specs))
@@ -277,20 +336,69 @@ func main() {
 	log.Printf("access insights build complete output=%s elapsed=%s", outputPath, time.Since(start).Round(time.Second))
 }
 
+func accessDailyAggregateDir() string {
+	if value := strings.TrimSpace(os.Getenv("ACCESS_INSIGHTS_DAILY_DIR")); value != "" {
+		return value
+	}
+	return dailyAggregateDir
+}
+
+func forceBackfill() bool {
+	value := strings.ToLower(strings.TrimSpace(os.Getenv("ACCESS_INSIGHTS_BACKFILL")))
+	return value == "1" || value == "true" || value == "yes"
+}
+
+func dailyTargetDay(now time.Time) string {
+	if value := strings.TrimSpace(os.Getenv("ACCESS_INSIGHTS_TARGET_DAY")); value != "" {
+		return value
+	}
+	return dayID(now.AddDate(0, 0, -1))
+}
+
+func wantedAggregateDays(now time.Time, stored map[string]*dayAggregate) map[string]bool {
+	wanted := map[string]bool{dailyTargetDay(now): true}
+	target := dayStart(now.AddDate(0, 0, -1))
+	for offset := retainedBackfillDays - 1; offset >= 0; offset-- {
+		day := dayID(target.AddDate(0, 0, -offset))
+		if stored[day] == nil {
+			wanted[day] = true
+		}
+	}
+	return wanted
+}
+
+func needsBackfill(wanted map[string]bool, targetDay string) bool {
+	for day := range wanted {
+		if day != targetDay {
+			return true
+		}
+	}
+	return false
+}
+
+func dayID(value time.Time) string {
+	return value.Format("2006-01-02")
+}
+
+func dayStart(value time.Time) time.Time {
+	y, m, d := value.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, value.Location())
+}
+
 func periodSpecs(now time.Time) []periodSpec {
 	return []periodSpec{
-		{ID: "24h", Label: "24h", Description: "Last 24 hours, generated from retained access-log input.", Since: now.Add(-24 * time.Hour), WindowHours: 24},
-		{ID: "7d", Label: "7d", Description: "Last 7 days, generated from retained access-log input.", Since: now.AddDate(0, 0, -7), WindowHours: 7 * 24},
-		{ID: "14d", Label: "14d", Description: "Last 14 days, generated from retained access-log input.", Since: now.AddDate(0, 0, -14), WindowHours: 14 * 24},
-		{ID: "1m", Label: "1m", Description: "Last 1 month, limited by retained access-log input.", Since: now.AddDate(0, -1, 0), WindowHours: 30 * 24},
-		{ID: "3m", Label: "3m", Description: "Last 3 months, limited by retained access-log input.", Since: now.AddDate(0, -3, 0), WindowHours: 3 * 30 * 24},
-		{ID: "6m", Label: "6m", Description: "Last 6 months, limited by retained access-log input.", Since: now.AddDate(0, -6, 0), WindowHours: 6 * 30 * 24},
-		{ID: "1y", Label: "1y", Description: "Last 1 year, limited by retained access-log input.", Since: now.AddDate(-1, 0, 0), WindowHours: 365 * 24},
-		{ID: "all", Label: "all", Description: "All available retained access-log input supplied to this run.", Since: time.Unix(0, 0), WindowHours: 24 * 365 * 100, IsAll: true},
+		{ID: "24h", Label: "24h", Description: "Latest daily aggregate generated from stored daily access summaries.", Since: now.Add(-24 * time.Hour), WindowHours: 24},
+		{ID: "7d", Label: "7d", Description: "Last 7 days, composed from stored daily access summaries.", Since: now.AddDate(0, 0, -7), WindowHours: 7 * 24},
+		{ID: "14d", Label: "14d", Description: "Last 14 days, composed from stored daily access summaries.", Since: now.AddDate(0, 0, -14), WindowHours: 14 * 24},
+		{ID: "1m", Label: "1m", Description: "Last 1 month, composed from stored daily access summaries.", Since: now.AddDate(0, -1, 0), WindowHours: 30 * 24},
+		{ID: "3m", Label: "3m", Description: "Last 3 months, composed from stored daily access summaries.", Since: now.AddDate(0, -3, 0), WindowHours: 3 * 30 * 24},
+		{ID: "6m", Label: "6m", Description: "Last 6 months, composed from stored daily access summaries.", Since: now.AddDate(0, -6, 0), WindowHours: 6 * 30 * 24},
+		{ID: "1y", Label: "1y", Description: "Last 1 year, composed from stored daily access summaries.", Since: now.AddDate(-1, 0, 0), WindowHours: 365 * 24},
+		{ID: "all", Label: "all", Description: "All available stored daily access summaries supplied to this run.", Since: time.Unix(0, 0), WindowHours: 24 * 365 * 100, IsAll: true},
 	}
 }
 
-func readLog(path string, days map[string]*dayAggregate, geoResolver *geoResolver) (int64, int64, error) {
+func readLog(path string, days map[string]*dayAggregate, geoResolver *geoResolver, wantedDays map[string]bool) (int64, int64, error) {
 	file, err := os.Open(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return 0, 0, nil
@@ -321,8 +429,11 @@ func readLog(path string, days map[string]*dayAggregate, geoResolver *geoResolve
 		if !ok {
 			continue
 		}
-		records++
 		key := rec.when.Format("2006-01-02")
+		if len(wantedDays) > 0 && !wantedDays[key] {
+			continue
+		}
+		records++
 		day := days[key]
 		if day == nil {
 			day = newDayAggregate(key, rec.when)
@@ -352,6 +463,146 @@ func newDayAggregate(day string, when time.Time) *dayAggregate {
 		status:     map[string]int64{},
 		hours:      map[string]int64{},
 	}
+}
+
+func loadStoredDays(dir string) (map[string]*dayAggregate, error) {
+	result := map[string]*dayAggregate{}
+	entries, err := os.ReadDir(dir)
+	if errors.Is(err, os.ErrNotExist) {
+		return result, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+		path := filepath.Join(dir, entry.Name())
+		body, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("read %s: %w", path, err)
+		}
+		var stored storedDayAggregate
+		if err := json.Unmarshal(body, &stored); err != nil {
+			return nil, fmt.Errorf("decode %s: %w", path, err)
+		}
+		day, err := stored.toDayAggregate()
+		if err != nil {
+			return nil, fmt.Errorf("decode %s: %w", path, err)
+		}
+		result[day.day] = day
+	}
+	return result, nil
+}
+
+func writeStoredDay(dir string, day *dayAggregate) error {
+	if day == nil || day.day == "" {
+		return fmt.Errorf("empty day aggregate")
+	}
+	path := filepath.Join(dir, day.day+".json")
+	return writeJSONAtomic(path, day.toStored())
+}
+
+func (d *dayAggregate) toStored() storedDayAggregate {
+	return storedDayAggregate{
+		Version:         aggregateVersion,
+		Day:             d.day,
+		Midnight:        d.midnight,
+		Total:           d.total,
+		Success:         d.success,
+		UniquePrecision: d.unique.p,
+		UniqueRegisters: d.unique.registers(),
+		Countries:       d.countries,
+		Locations:       d.locations,
+		ASNs:            d.asns,
+		Endpoints:       d.endpoints,
+		UserAgents:      d.userAgents,
+		Status:          d.status,
+		Hours:           d.hours,
+		GeoResolved:     d.geoResolved,
+		GeoUnresolved:   d.geoUnresolved,
+		FirstSeen:       formatOptionalTime(d.firstSeen),
+		LastSeen:        formatOptionalTime(d.lastSeen),
+	}
+}
+
+func (s storedDayAggregate) toDayAggregate() (*dayAggregate, error) {
+	if s.Version != aggregateVersion {
+		return nil, fmt.Errorf("unsupported aggregate version %d", s.Version)
+	}
+	unique, err := newHLLFromRegisters(s.UniquePrecision, s.UniqueRegisters)
+	if err != nil {
+		return nil, err
+	}
+	firstSeen, err := parseOptionalTime(s.FirstSeen)
+	if err != nil {
+		return nil, fmt.Errorf("firstSeen: %w", err)
+	}
+	lastSeen, err := parseOptionalTime(s.LastSeen)
+	if err != nil {
+		return nil, fmt.Errorf("lastSeen: %w", err)
+	}
+	return &dayAggregate{
+		day:           s.Day,
+		midnight:      s.Midnight,
+		total:         s.Total,
+		success:       s.Success,
+		unique:        unique,
+		countries:     nonNilCountries(s.Countries),
+		locations:     nonNilLocations(s.Locations),
+		asns:          nonNilASNs(s.ASNs),
+		endpoints:     nonNilIntMap(s.Endpoints),
+		userAgents:    nonNilIntMap(s.UserAgents),
+		status:        nonNilIntMap(s.Status),
+		hours:         nonNilIntMap(s.Hours),
+		geoResolved:   s.GeoResolved,
+		geoUnresolved: s.GeoUnresolved,
+		firstSeen:     firstSeen,
+		lastSeen:      lastSeen,
+	}, nil
+}
+
+func formatOptionalTime(value time.Time) string {
+	if value.IsZero() {
+		return ""
+	}
+	return value.Format(time.RFC3339)
+}
+
+func parseOptionalTime(value string) (time.Time, error) {
+	if strings.TrimSpace(value) == "" {
+		return time.Time{}, nil
+	}
+	return time.Parse(time.RFC3339, value)
+}
+
+func nonNilCountries(values map[string]countryRow) map[string]countryRow {
+	if values != nil {
+		return values
+	}
+	return map[string]countryRow{}
+}
+
+func nonNilLocations(values map[string]locationRow) map[string]locationRow {
+	if values != nil {
+		return values
+	}
+	return map[string]locationRow{}
+}
+
+func nonNilASNs(values map[string]asnRow) map[string]asnRow {
+	if values != nil {
+		return values
+	}
+	return map[string]asnRow{}
+}
+
+func nonNilIntMap(values map[string]int64) map[string]int64 {
+	if values != nil {
+		return values
+	}
+	return map[string]int64{}
 }
 
 func (d *dayAggregate) add(rec record, geoResolver *geoResolver) {
@@ -611,10 +862,11 @@ func notes(agg *combinedAggregate) []string {
 	result := []string{
 		"Visitor IP addresses are aggregated in memory and are not written to this public JSON.",
 		"Endpoint labels strip query strings before counting to avoid publishing tokens or identifiers.",
-		"GeoIP and ASN fields are counted for every parsed request during streaming aggregation; raw visitor IP addresses are not written to this public JSON.",
+		"Periods are composed from stored daily aggregates; raw visitor IP addresses are not written to daily aggregate files or this public JSON.",
+		"GeoIP and ASN fields are counted for every parsed request during daily streaming aggregation.",
 	}
 	if agg.spec.IsAll {
-		result = append(result, "The all period covers all retained access-log inputs supplied to this run.")
+		result = append(result, "The all period covers all stored daily access aggregates supplied to this run.")
 	} else if agg.total > 0 && agg.seen && agg.firstSeen.After(agg.spec.Since) {
 		result = append(result, fmt.Sprintf("Input logs for %s start at %s; older traffic is not included in this run.", agg.spec.Label, agg.firstSeen.UTC().Format(time.RFC3339)))
 	}
@@ -660,11 +912,31 @@ func sourceLabel(paths []string) string {
 	return strings.Join(names, ", ")
 }
 
+func storedSourceLabel(dir string, days []*dayAggregate) string {
+	if len(days) == 0 {
+		return fmt.Sprintf("daily aggregates from %s", dir)
+	}
+	return fmt.Sprintf("daily aggregates from %s (%s..%s)", dir, days[0].day, days[len(days)-1].day)
+}
+
+func sortedDayKeys(days map[string]bool) []string {
+	result := make([]string, 0, len(days))
+	for day := range days {
+		result = append(result, day)
+	}
+	sort.Strings(result)
+	return result
+}
+
 func writeAtomic(path string, doc accessDocument) error {
+	return writeJSONAtomic(path, doc)
+}
+
+func writeJSONAtomic(path string, value any) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	body, err := json.MarshalIndent(doc, "", "  ")
+	body, err := json.MarshalIndent(value, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -682,6 +954,27 @@ type hll struct {
 
 func newHLL(p uint8) *hll {
 	return &hll{p: p, regs: make([]uint8, 1<<p)}
+}
+
+func newHLLFromRegisters(p uint8, registers []byte) (*hll, error) {
+	if p == 0 || p > 20 {
+		return nil, fmt.Errorf("invalid hll precision %d", p)
+	}
+	if len(registers) != 1<<p {
+		return nil, fmt.Errorf("invalid hll register length %d for precision %d", len(registers), p)
+	}
+	h := newHLL(p)
+	copy(h.regs, registers)
+	return h, nil
+}
+
+func (h *hll) registers() []byte {
+	if h == nil {
+		return nil
+	}
+	result := make([]byte, len(h.regs))
+	copy(result, h.regs)
+	return result
 }
 
 func (h *hll) add(value string) {
