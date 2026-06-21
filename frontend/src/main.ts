@@ -222,7 +222,6 @@ function detailsFor(info: IpInfo): DetailRow[] {
       .join(", ") ?? "";
   const coordinates = info.city.Location ? `${info.city.Location.Latitude}, ${info.city.Location.Longitude}` : "";
   return [
-    { label: "IP address", value: info.ipAddress, strong: true },
     {
       label: "AS",
       value: info.asn.AutonomousSystemNumber > 0 ? `AS${info.asn.AutonomousSystemNumber}` : "",
