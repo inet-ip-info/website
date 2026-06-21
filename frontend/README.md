@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-The production Go server provides `/json`, `/ip`, and CLI responses. During local Vite development, the UI falls back to sample IP data when `/json` is unavailable.
+The production Go server provides `/json`, `/ip`, and CLI responses. During local Vite development, the initial current-IP display uses sample data, while manual `/json` lookups are proxied to `https://inet-ip.info`.
 
 ## Build
 

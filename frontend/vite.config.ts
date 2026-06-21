@@ -3,6 +3,14 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   publicDir: "static",
+  server: {
+    proxy: {
+      "/json": {
+        target: "https://inet-ip.info",
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     outDir: "public",
     emptyOutDir: true,

@@ -14,7 +14,7 @@ npm install
 npm run dev
 ```
 
-The local Vite dev server does not provide `/json`; the UI uses sample IP data only on the Vite dev/preview ports.
+The local Vite dev server uses sample data for the initial current-IP display and proxies manual `/json` lookups to `https://inet-ip.info`.
 
 ## Frontend build
 

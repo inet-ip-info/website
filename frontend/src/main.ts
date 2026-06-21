@@ -170,8 +170,8 @@ function formatIPv4(value: number): string {
 }
 
 async function fetchIpInfo(ipAddress?: string): Promise<IpInfo> {
-  if (isStaticFrontendPreview()) {
-    return ipAddress === undefined ? SAMPLE_INFO : { ...SAMPLE_INFO, ipAddress };
+  if (isStaticFrontendPreview() && ipAddress === undefined) {
+    return SAMPLE_INFO;
   }
 
   const init: RequestInit =
@@ -187,6 +187,9 @@ async function fetchIpInfo(ipAddress?: string): Promise<IpInfo> {
     if (!response.ok) throw new Error(await response.text());
     return (await response.json()) as IpInfo;
   } catch (error) {
+    if (isStaticFrontendPreview() && ipAddress !== undefined) {
+      throw new Error(`Local lookup proxy failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
     throw error;
   }
 }
