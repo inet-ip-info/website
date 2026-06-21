@@ -944,8 +944,8 @@ func rankedCountries(rows map[string]countryRow, total int64) []countryRow {
 		result = append(result, row)
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].Requests > result[j].Requests })
-	if len(result) > topLocationN {
-		result = result[:topLocationN]
+	if len(result) > topN {
+		result = result[:topN]
 	}
 	return result
 }
@@ -957,8 +957,8 @@ func rankedLocations(rows map[string]locationRow, total int64) []locationRow {
 		result = append(result, row)
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].Requests > result[j].Requests })
-	if len(result) > topN {
-		result = result[:topN]
+	if len(result) > topLocationN {
+		result = result[:topLocationN]
 	}
 	return result
 }
