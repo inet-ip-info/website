@@ -521,6 +521,7 @@ textarea:focus {
 }
 
 .panel-topline {
+  grid-template-columns: 1fr;
   padding: 16px 20px;
   border-bottom: 1px solid rgba(221, 255, 234, 0.09);
   background: rgba(255, 255, 255, 0.03);
@@ -633,7 +634,12 @@ textarea:focus {
 
 .location-map {
   position: relative;
-  min-height: 292px;
+  isolation: isolate;
+  aspect-ratio: 2 / 1;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
   background: linear-gradient(rgba(209, 255, 226, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(209, 255, 226, 0.05) 1px, transparent 1px),
@@ -654,14 +660,6 @@ textarea:focus {
   stroke: rgba(214, 255, 232, 0.22);
   stroke-width: 0.8;
   vector-effect: non-scaling-stroke;
-}
-
-.location-map strong {
-  position: absolute;
-  left: 28px;
-  bottom: 24px;
-  color: #f4fff7;
-  font-size: 28px;
 }
 
 .location-map small {
@@ -970,44 +968,6 @@ textarea:focus {
   grid-template-columns: repeat(4, 1fr);
 }
 
-.access-history-panel {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 14px;
-  padding: 18px;
-  border: 1px solid rgba(209, 255, 228, 0.13);
-  border-radius: 8px;
-  background: rgba(209, 255, 228, 0.04);
-}
-
-.access-history-panel[hidden] {
-  display: none;
-}
-
-.access-history-panel div {
-  display: grid;
-  gap: 8px;
-}
-
-.access-history-panel span,
-.access-history-panel small {
-  color: #8ea296;
-}
-
-.access-history-panel span {
-  font-size: 12px;
-  font-weight: 760;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.access-history-panel strong {
-  color: #ffffff;
-  font-size: 22px;
-  line-height: 1.25;
-}
-
 .access-metric,
 .access-panel {
   border: 1px solid rgba(209, 255, 228, 0.13);
@@ -1041,6 +1001,13 @@ textarea:focus {
   line-height: 1;
 }
 
+.access-metric small {
+  align-self: end;
+  color: #8ea296;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .access-metric.strong strong,
 .access-metric.good strong {
   color: #a9ffcc;
@@ -1052,11 +1019,17 @@ textarea:focus {
 
 .access-geo-grid {
   grid-template-columns: minmax(0, 1fr) minmax(300px, 0.48fr);
-  align-items: stretch;
+  align-items: start;
 }
 
 .access-map {
-  min-height: 420px;
+  z-index: 0;
+  min-height: 0;
+}
+
+.access-country-panel {
+  position: relative;
+  z-index: 2;
 }
 
 .access-map .world-map path {
@@ -1068,13 +1041,14 @@ textarea:focus {
   position: absolute;
   z-index: 3;
   transform: translate(-50%, -50%);
-  border: 1px solid #06100a;
+  border: 1px solid rgba(4, 15, 8, 0.95);
   border-radius: 50%;
-  background: #6effb8;
-  opacity: 0.86;
+  background: radial-gradient(circle at 38% 34%, #ecfff5 0 18%, #8dffd4 24% 58%, #40dd9b 72%);
   box-shadow:
-    0 0 0 4px rgba(110, 255, 184, 0.12),
-    0 0 22px rgba(110, 255, 184, 0.5);
+    0 0 0 3px rgba(110, 255, 184, 0.24),
+    0 0 0 9px rgba(110, 255, 184, 0.08),
+    0 0 22px rgba(110, 255, 184, 0.64);
+  outline: 1px solid rgba(194, 255, 219, 0.38);
 }
 
 .access-panel {
@@ -1093,6 +1067,32 @@ textarea:focus {
 .access-bar-list {
   display: grid;
   gap: 14px;
+}
+
+.access-scroll-list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(110, 255, 184, 0.46) rgba(219, 255, 231, 0.08);
+}
+
+.access-scroll-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.access-scroll-list::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(219, 255, 231, 0.08);
+}
+
+.access-scroll-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(110, 255, 184, 0.46);
+}
+
+.access-country-list {
+  max-height: 600px;
 }
 
 .access-bar-row {
@@ -1149,6 +1149,10 @@ textarea:focus {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 10px;
+}
+
+.access-location-list {
+  max-height: 246px;
 }
 
 .access-rank-grid article {
@@ -1377,6 +1381,10 @@ textarea:focus {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .access-location-list {
+    max-height: 630px;
+  }
+
   .tool-links {
     grid-template-columns: 1fr;
   }
@@ -1443,6 +1451,11 @@ textarea:focus {
     padding-top: 64px;
   }
 
+  .access-country-list,
+  .access-location-list {
+    max-height: 560px;
+  }
+
   .section-heading h2 {
     font-size: 30px;
   }
@@ -1457,7 +1470,7 @@ textarea:focus {
   }
 
   .access-map {
-    min-height: 300px;
+    min-height: 0;
   }
 
   .access-bar-row div {
@@ -1473,10 +1486,6 @@ textarea:focus {
   }
 
   .access-period-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .access-history-panel {
     grid-template-columns: 1fr;
   }
 

@@ -1635,7 +1635,7 @@ const SAMPLE_ACCESS_INSIGHTS: AccessInsights = {
   sample: true,
   generatedAt: "2026-06-21T03:00:00+09:00",
   source: "sample-nginx-access",
-  defaultPeriod: "all",
+  defaultPeriod: "24h",
   periods: [
     SAMPLE_ACCESS_24H_PERIOD,
     SAMPLE_ACCESS_7D_PERIOD,
@@ -1688,6 +1688,7 @@ const homeViewState: HomeViewState = {
   info: null,
 };
 let activeAccessPeriodId = "";
+let navIpInfoPromise: Promise<IpInfo> | null = null;
 
 function markAppReady(): void {
   if (document.documentElement.classList.contains("app-ready")) return;
@@ -1784,6 +1785,7 @@ function renderShell(content: string): void {
     </div>
   `;
   setupLanguageMenu();
+  void ensureNavIp();
 }
 
 function setDocumentMetadata(): void {
@@ -1886,6 +1888,22 @@ function setNavIp(ipAddress: string): void {
   if (!wrapper || !value || ipAddress === "") return;
   value.textContent = ipAddress;
   wrapper.hidden = false;
+}
+
+async function ensureNavIp(): Promise<void> {
+  if (homeViewState.currentIp !== "") {
+    setNavIp(homeViewState.currentIp);
+    return;
+  }
+  navIpInfoPromise ??= fetchIpInfo();
+  try {
+    const info = await navIpInfoPromise;
+    if (info.ipAddress === "") return;
+    homeViewState.currentIp = info.ipAddress;
+    setNavIp(info.ipAddress);
+  } catch {
+    // Keep the header compact if the current-IP endpoint is unavailable.
+  }
 }
 
 function getName(names: NameMap | undefined): string {
@@ -2057,7 +2075,9 @@ function hasUsableLocation(
 
 function renderWorldMap(): string {
   return `
-    <svg class="world-map" viewBox="${escapeHtml(WORLD_MAP_VIEW_BOX)}" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <svg class="world-map" viewBox="${escapeHtml(
+      WORLD_MAP_VIEW_BOX,
+    )}" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
       ${WORLD_MAP_PATHS.map((path) => `<path d="${escapeHtml(path)}"></path>`).join("")}
     </svg>
   `;
@@ -2089,7 +2109,6 @@ function renderHome(): void {
         <section class="inspector-panel" aria-label="${escapeHtml(t("home.panelAria"))}">
           <div class="panel-topline">
             <span>${escapeHtml(t("home.resolvedTarget"))}</span>
-            <strong id="resolved-target">${escapeHtml(t("home.resolving"))}</strong>
           </div>
           <div class="ip-display">
             <span>${escapeHtml(t("home.ipAddress"))}</span>
@@ -2109,7 +2128,6 @@ function renderHome(): void {
         <div class="location-map" aria-hidden="true">
           ${renderWorldMap()}
           <span class="map-target" id="map-target" hidden><span></span></span>
-          <strong id="map-label">GeoIP</strong>
           <small>Made with Natural Earth.</small>
         </div>
         <div class="mini-table" id="location-table"></div>
@@ -2172,11 +2190,9 @@ async function initHome(): Promise<void> {
     homeViewState.info = info;
 
     setNavIp(currentIp || info.ipAddress);
-    requiredElement("#resolved-target").textContent = nextResolvedTarget;
     requiredElement("#ip-display").textContent = info.ipAddress || t("message.unknown");
     requiredElement("#detail-table").innerHTML = renderRows(detailsFor(info));
     requiredElement("#location-table").innerHTML = renderRows(locationRowsFor(info));
-    requiredElement("#map-label").textContent = hasUsableLocation(info) ? getName(info.city.Country?.Names) || "GeoIP" : "GeoIP";
     updateMapTarget(info);
     requiredElement("#license").innerHTML = licenseHtml();
     renderCommandRows(currentIp || info.ipAddress);
@@ -2560,7 +2576,6 @@ function renderAccessInsights(): void {
         </div>
       </div>
       <div class="access-summary-grid" id="access-summary"></div>
-      <div class="access-history-panel" id="access-history" hidden></div>
     </section>
     <section class="content-section access-section">
       <div class="section-heading">
@@ -2569,14 +2584,14 @@ function renderAccessInsights(): void {
       </div>
       <div class="access-geo-grid">
         <div class="location-map access-map" id="access-map" aria-label="${escapeHtml(t("access.geoTitle"))}"></div>
-        <div class="access-panel">
+        <div class="access-panel access-country-panel">
           <h3>${escapeHtml(t("access.topCountries"))}</h3>
-          <div class="access-bar-list" id="access-countries"></div>
+          <div class="access-bar-list access-scroll-list access-country-list" id="access-countries"></div>
         </div>
       </div>
       <div class="access-panel access-wide-panel">
         <h3>${escapeHtml(t("access.topLocations"))}</h3>
-        <div class="access-rank-grid" id="access-locations"></div>
+        <div class="access-rank-grid access-scroll-list access-location-list" id="access-locations"></div>
       </div>
     </section>
     <section class="content-section access-section">
@@ -2774,11 +2789,11 @@ function renderAccessPeriod(data: AccessInsights, periods: AccessPeriod[]): void
     button.setAttribute("aria-selected", String(active));
   });
 
-  requiredElement("#access-summary").innerHTML = renderAccessSummary(period);
-  renderAccessHistory(data, period);
+  const estimate = (data.historicalEstimates ?? []).find((item) => item.id === period.id);
+  requiredElement("#access-summary").innerHTML = renderAccessSummary(period, estimate);
   requiredElement("#access-map").innerHTML = renderAccessMap(period);
   requiredElement("#access-countries").innerHTML = renderAccessBarList(period.topCountries);
-  requiredElement("#access-locations").innerHTML = renderAccessRankGrid(period.topLocations.slice(0, 12));
+  requiredElement("#access-locations").innerHTML = renderAccessRankGrid(period.topLocations);
   requiredElement("#access-trend").innerHTML = renderAccessTrend(period.hourlyRequests, period);
   requiredElement("#access-status").innerHTML = renderAccessStatuses(period.statusCodes);
   requiredElement("#access-endpoints").innerHTML = renderAccessBarList(period.topEndpoints);
@@ -2787,39 +2802,28 @@ function renderAccessPeriod(data: AccessInsights, periods: AccessPeriod[]): void
   requiredElement("#access-notes").innerHTML = period.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("");
 }
 
-function renderAccessHistory(data: AccessInsights, period: AccessPeriod): void {
-  const panel = requiredElement<HTMLDivElement>("#access-history");
-  const estimate = (data.historicalEstimates ?? []).find((item) => item.id === period.id);
-  if (!estimate) {
-    panel.hidden = true;
-    panel.innerHTML = "";
-    return;
-  }
-  panel.hidden = false;
-  const range = tf("access.estimatedRange", {
-    from: formatDate(estimate.from),
-    to: formatDate(estimate.to),
-  });
-  panel.innerHTML = `
-    <div>
-      <span>${escapeHtml(t("access.historicalEstimate"))}</span>
-      <strong>${escapeHtml(t("access.estimatedRequests"))}: ${escapeHtml(formatCount(estimate.totalRequests))}</strong>
-      <small>${escapeHtml(range)}</small>
-    </div>
-    <div>
-      <span>${escapeHtml(t("access.estimatedPeakDay"))}</span>
-      <strong>${escapeHtml(formatDate(estimate.peakDay))}: ${escapeHtml(formatCount(estimate.peakDayRequests))}</strong>
-      <small>${escapeHtml(tf("access.estimatedCoverage", { count: estimate.coverageDays }))}</small>
-    </div>
-  `;
-}
-
-function renderAccessSummary(data: AccessPeriod): string {
+function renderAccessSummary(data: AccessPeriod, estimate?: AccessHistoricalEstimate): string {
   const peakLabel = isDailyAccessPeriod(data) ? t("access.peakDay") : t("access.peakHour");
+  const estimateRange = estimate
+    ? tf("access.estimatedRange", {
+        from: formatDate(estimate.from),
+        to: formatDate(estimate.to),
+      })
+    : "";
   const metrics = [
-    { label: t("access.requests"), value: formatCount(data.summary.totalRequests), tone: "strong" },
+    {
+      label: t("access.requests"),
+      value: formatCount(estimate?.totalRequests ?? data.summary.totalRequests),
+      tone: "strong",
+      detail: estimateRange,
+    },
     { label: t("access.visitors"), value: formatCount(data.summary.uniqueVisitors), tone: "" },
-    { label: peakLabel, value: formatCount(data.summary.peakHourRequests), tone: "" },
+    {
+      label: peakLabel,
+      value: formatCount(estimate?.peakDayRequests ?? data.summary.peakHourRequests),
+      tone: "",
+      detail: estimate ? `${formatDate(estimate.peakDay)} / ${tf("access.estimatedCoverage", { count: estimate.coverageDays })}` : "",
+    },
     { label: t("access.successRate"), value: formatPercent(data.summary.successRate), tone: "good" },
   ];
   return metrics
@@ -2828,6 +2832,7 @@ function renderAccessSummary(data: AccessPeriod): string {
         <article class="access-metric ${metric.tone}">
           <span>${escapeHtml(metric.label)}</span>
           <strong>${escapeHtml(metric.value)}</strong>
+          ${metric.detail ? `<small>${escapeHtml(metric.detail)}</small>` : ""}
         </article>
       `,
     )
@@ -2835,27 +2840,38 @@ function renderAccessSummary(data: AccessPeriod): string {
 }
 
 function renderAccessMap(data: AccessPeriod): string {
-  const mapLocations = data.topLocations.slice(0, 200);
+  const mapLocations = data.topLocations.filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude)).slice(0, 200);
   const maxRequests = Math.max(1, ...mapLocations.map((item) => item.requests));
+  const coordinateHits = new Map<string, number>();
   const markers = mapLocations
-    .map((item) => {
+    .map((item, index) => {
       const x = ((item.longitude + 180) / 360) * 100;
       const y = ((90 - item.latitude) / 180) * 100;
-      const size = 7 + (item.requests / maxRequests) * 21;
+      const ratio = Math.max(0, item.requests / maxRequests);
+      const scaledRatio = Math.sqrt(ratio);
+      const size = 9 + scaledRatio * 17;
+      const opacity = 0.72 + scaledRatio * 0.26;
+      const coordinateKey = `${Math.round(x / 2)}:${Math.round(y / 2)}`;
+      const overlapIndex = coordinateHits.get(coordinateKey) ?? 0;
+      coordinateHits.set(coordinateKey, overlapIndex + 1);
+      const jitterAngle = overlapIndex * 2.399963229728653;
+      const jitterRadius = overlapIndex === 0 ? 0 : Math.min(28, 6 + Math.sqrt(overlapIndex) * 4.2);
+      const jitterX = Math.cos(jitterAngle) * jitterRadius;
+      const jitterY = Math.sin(jitterAngle) * jitterRadius * 0.68;
       return `
         <span
           class="access-map-marker"
-          style="left: ${clamp(x, 0, 100)}%; top: ${clamp(y, 0, 100)}%; width: ${size}px; height: ${size}px"
+          style="left: calc(${clamp(x, 0, 100)}% + ${jitterX.toFixed(1)}px); top: calc(${clamp(y, 0, 100)}% + ${jitterY.toFixed(
+            1,
+          )}px); width: ${size.toFixed(1)}px; height: ${size.toFixed(1)}px; opacity: ${opacity.toFixed(2)}; z-index: ${index + 3}"
           title="${escapeHtml(`${item.label}: ${formatCount(item.requests)}`)}"
         ></span>
       `;
     })
     .join("");
-  const label = data.topLocations[0]?.label ?? t("access.mapFallback");
   return `
     ${renderWorldMap()}
     ${markers}
-    <strong>${escapeHtml(label)}</strong>
   `;
 }
 

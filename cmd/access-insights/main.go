@@ -23,10 +23,13 @@ import (
 )
 
 const (
-	outputPath    = "/var/lib/inet-ip-info/access-insights.json"
-	topN          = 8
-	topLocationN  = 200
-	geoCacheLimit = 200000
+	outputPath            = "/var/lib/inet-ip-info/access-insights.json"
+	defaultAccessPeriod   = "24h"
+	topN                  = 8
+	topCountryN           = 200
+	topLocationN          = 200
+	geoCacheLimit         = 200000
+	nearbyLocationDegrees = 0.18
 
 	defaultGeoIPDatabaseDir = "/var/lib/inet-ip.info/data"
 	geoASNDatabase          = "GeoLite2-ASN.mmdb"
@@ -264,7 +267,7 @@ func main() {
 		HourlyRequests:      allDoc.HourlyRequests,
 		Notes:               allDoc.Notes,
 		Sample:              false,
-		DefaultPeriod:       "all",
+		DefaultPeriod:       defaultAccessPeriod,
 		Periods:             periods,
 		HistoricalEstimates: historicalEstimates,
 	}
@@ -825,8 +828,8 @@ func (r *geoResolver) lookup(value string) (geoEntry, bool) {
 			if len(city.Subdivisions) > 0 {
 				subdivision = nameFromMap(city.Subdivisions[0].Names)
 			}
-			entry.locationLabel = strings.Join(nonEmpty(cityName, subdivision, entry.countryName), ", ")
-			entry.locationKey = fmt.Sprintf("%s|%s|%.3f|%.3f", entry.locationLabel, entry.countryCode, city.Location.Latitude, city.Location.Longitude)
+			entry.locationLabel = locationLabel(cityName, subdivision, entry.countryName)
+			entry.locationKey = locationAggregationKey(cityName, subdivision, entry.countryCode, city.Location.Latitude, city.Location.Longitude)
 			entry.latitude = city.Location.Latitude
 			entry.longitude = city.Location.Longitude
 			entry.hasLocation = entry.locationLabel != ""
@@ -902,6 +905,29 @@ func nameFromMap(names map[string]string) string {
 	return ""
 }
 
+func locationLabel(cityName, subdivision, countryName string) string {
+	if strings.EqualFold(strings.TrimSpace(cityName), strings.TrimSpace(subdivision)) {
+		subdivision = ""
+	}
+	return strings.Join(nonEmpty(cityName, subdivision, countryName), ", ")
+}
+
+func locationAggregationKey(cityName, subdivision, countryCode string, lat, lon float64) string {
+	cityKey := normalizeLocationToken(cityName)
+	if cityKey != "" {
+		return fmt.Sprintf("%s|city|%s", countryCode, cityKey)
+	}
+	subdivisionKey := normalizeLocationToken(subdivision)
+	if subdivisionKey != "" {
+		return fmt.Sprintf("%s|subdivision|%s", countryCode, subdivisionKey)
+	}
+	return fmt.Sprintf("%s|geo|%.1f|%.1f", countryCode, lat, lon)
+}
+
+func normalizeLocationToken(value string) string {
+	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(value))), " ")
+}
+
 func nonEmpty(values ...string) []string {
 	result := make([]string, 0, len(values))
 	for _, value := range values {
@@ -922,12 +948,25 @@ func addCountry(rows map[string]countryRow, code, name string, requests int64) {
 
 func addLocation(rows map[string]locationRow, key, label, countryCode string, lat, lon float64, requests int64) {
 	row := rows[key]
-	row.Label = label
+	if row.Label == "" || locationLabelSpecificity(label) > locationLabelSpecificity(row.Label) {
+		row.Label = label
+	}
 	row.CountryCode = countryCode
-	row.Latitude = lat
-	row.Longitude = lon
+	total := row.Requests + requests
+	if row.Requests > 0 && total > 0 {
+		row.Latitude = ((row.Latitude * float64(row.Requests)) + (lat * float64(requests))) / float64(total)
+		row.Longitude = ((row.Longitude * float64(row.Requests)) + (lon * float64(requests))) / float64(total)
+	} else {
+		row.Latitude = lat
+		row.Longitude = lon
+	}
 	row.Requests += requests
 	rows[key] = row
+}
+
+func locationLabelSpecificity(label string) int {
+	parts := nonEmpty(strings.Split(label, ", ")...)
+	return len(parts)
 }
 
 func addASN(rows map[string]asnRow, label string, requests int64) {
@@ -944,23 +983,66 @@ func rankedCountries(rows map[string]countryRow, total int64) []countryRow {
 		result = append(result, row)
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].Requests > result[j].Requests })
+	if len(result) > topCountryN {
+		result = result[:topCountryN]
+	}
+	return result
+}
+
+func rankedLocations(rows map[string]locationRow, total int64) []locationRow {
+	result := compactLocations(rows)
+	for i := range result {
+		result[i].Share = percent(result[i].Requests, total)
+	}
+	sort.Slice(result, func(i, j int) bool { return result[i].Requests > result[j].Requests })
 	if len(result) > topLocationN {
 		result = result[:topLocationN]
 	}
 	return result
 }
 
-func rankedLocations(rows map[string]locationRow, total int64) []locationRow {
-	result := make([]locationRow, 0, len(rows))
+func compactLocations(rows map[string]locationRow) []locationRow {
+	candidates := make([]locationRow, 0, len(rows))
 	for _, row := range rows {
-		row.Share = percent(row.Requests, total)
-		result = append(result, row)
+		candidates = append(candidates, row)
 	}
-	sort.Slice(result, func(i, j int) bool { return result[i].Requests > result[j].Requests })
-	if len(result) > topN {
-		result = result[:topN]
+	sort.Slice(candidates, func(i, j int) bool { return candidates[i].Requests > candidates[j].Requests })
+	result := make([]locationRow, 0, len(candidates))
+	for _, row := range candidates {
+		merged := false
+		for i := range result {
+			if isNearbyLocation(result[i], row) {
+				mergeLocationRow(&result[i], row)
+				merged = true
+				break
+			}
+		}
+		if !merged {
+			result = append(result, row)
+		}
 	}
 	return result
+}
+
+func isNearbyLocation(a, b locationRow) bool {
+	if a.CountryCode != b.CountryCode {
+		return false
+	}
+	latDiff := a.Latitude - b.Latitude
+	lonDiff := a.Longitude - b.Longitude
+	return latDiff*latDiff+lonDiff*lonDiff <= nearbyLocationDegrees*nearbyLocationDegrees
+}
+
+func mergeLocationRow(dst *locationRow, src locationRow) {
+	total := dst.Requests + src.Requests
+	if locationLabelSpecificity(src.Label) > locationLabelSpecificity(dst.Label) {
+		dst.Label = src.Label
+	}
+	if total > 0 {
+		dst.Latitude = ((dst.Latitude * float64(dst.Requests)) + (src.Latitude * float64(src.Requests))) / float64(total)
+		dst.Longitude = ((dst.Longitude * float64(dst.Requests)) + (src.Longitude * float64(src.Requests))) / float64(total)
+	}
+	dst.Requests = total
 }
 
 func rankedASNs(rows map[string]asnRow, total int64) []asnRow {
