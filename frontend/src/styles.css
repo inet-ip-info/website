@@ -738,7 +738,7 @@ textarea:focus {
 
 .tool-links {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
 }
 
@@ -860,6 +860,384 @@ textarea:focus {
   gap: 10px;
 }
 
+.access-page-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) auto;
+  gap: 28px;
+  align-items: end;
+}
+
+.access-page-hero h1 {
+  grid-column: 1 / -1;
+}
+
+.access-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.access-meta span {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(122, 255, 186, 0.16);
+  border-radius: 8px;
+  background: rgba(10, 20, 14, 0.8);
+  color: #8fa596;
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.access-meta strong {
+  color: #dfffea;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+.access-dashboard {
+  padding-top: 34px;
+}
+
+.access-sample-notice {
+  margin-bottom: 14px;
+}
+
+.access-period-shell {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+  margin-bottom: 14px;
+}
+
+.access-period-tabs {
+  align-content: start;
+  margin-bottom: 0;
+  padding: 10px;
+  border: 1px solid rgba(209, 255, 228, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.access-period-tabs button {
+  min-width: 68px;
+}
+
+.access-period-context {
+  min-height: 64px;
+  padding: 14px 16px;
+  border: 1px solid rgba(209, 255, 228, 0.12);
+  border-radius: 8px;
+  background: rgba(8, 17, 12, 0.78);
+}
+
+.access-period-context span {
+  display: block;
+  color: #8ea296;
+  font-size: 11px;
+  font-weight: 760;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.access-period-context strong {
+  display: block;
+  margin-top: 6px;
+  color: #dfffea;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 16px;
+}
+
+.access-period-context p {
+  margin-top: 6px;
+  color: #9eb2a5;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.access-summary-grid,
+.access-geo-grid,
+.access-traffic-grid,
+.access-client-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.access-summary-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.access-metric,
+.access-panel {
+  border: 1px solid rgba(209, 255, 228, 0.13);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)), #0d130f;
+  box-shadow:
+    0 22px 58px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.access-metric {
+  display: grid;
+  gap: 14px;
+  min-height: 122px;
+  padding: 20px;
+}
+
+.access-metric span,
+.access-panel h3 {
+  color: #8ea296;
+  font-size: 12px;
+  font-weight: 760;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.access-metric strong {
+  color: #ffffff;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.access-metric.strong strong,
+.access-metric.good strong {
+  color: #a9ffcc;
+}
+
+.access-section {
+  padding-top: 58px;
+}
+
+.access-geo-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.48fr);
+  align-items: stretch;
+}
+
+.access-map {
+  min-height: 420px;
+}
+
+.access-map .world-map path {
+  fill: rgba(111, 255, 184, 0.1);
+  stroke: rgba(214, 255, 232, 0.18);
+}
+
+.access-map-marker {
+  position: absolute;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  border: 2px solid #06100a;
+  border-radius: 50%;
+  background: #6effb8;
+  box-shadow:
+    0 0 0 8px rgba(110, 255, 184, 0.14),
+    0 0 38px rgba(110, 255, 184, 0.6);
+}
+
+.access-panel {
+  min-width: 0;
+  padding: 20px;
+}
+
+.access-panel h3 {
+  margin: 0 0 18px;
+}
+
+.access-wide-panel {
+  margin-top: 14px;
+}
+
+.access-bar-list {
+  display: grid;
+  gap: 14px;
+}
+
+.access-bar-row {
+  display: grid;
+  gap: 8px;
+}
+
+.access-bar-row div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.access-bar-row span {
+  min-width: 0;
+  color: #dfffea;
+  font-size: 14px;
+  font-weight: 680;
+  overflow-wrap: anywhere;
+}
+
+.access-bar-row strong,
+.access-bar-row em {
+  color: #ffffff;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.access-bar-row em {
+  color: #8ea296;
+}
+
+.access-bar-track {
+  position: relative;
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(219, 255, 231, 0.08);
+}
+
+.access-bar-track span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  min-width: 5px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6effb8, #82d8ff);
+}
+
+.access-rank-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.access-rank-grid article {
+  display: grid;
+  gap: 10px;
+  min-height: 118px;
+  padding: 16px;
+  border: 1px solid rgba(221, 255, 234, 0.09);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.026);
+}
+
+.access-rank-grid span {
+  color: #6effb8;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
+.access-rank-grid strong {
+  color: #ffffff;
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.access-rank-grid small {
+  color: #8ea296;
+  font-size: 12px;
+}
+
+.access-traffic-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.36fr);
+}
+
+.access-trend-panel {
+  min-height: 250px;
+}
+
+.access-trend {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+  height: 180px;
+  overflow-x: auto;
+  padding: 18px 0 32px;
+}
+
+.access-trend > span {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 12px;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, #6effb8, rgba(110, 255, 184, 0.24));
+}
+
+.access-trend > span.compact {
+  min-width: 8px;
+}
+
+.access-trend > span.dense {
+  min-width: 5px;
+}
+
+.access-trend small {
+  position: absolute;
+  right: 50%;
+  bottom: -24px;
+  transform: translateX(50%) rotate(-32deg);
+  transform-origin: center;
+  color: #718579;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.access-status-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.access-status {
+  display: grid;
+  gap: 8px;
+  min-width: 94px;
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid rgba(221, 255, 234, 0.1);
+  border-radius: 8px;
+  color: #a9b9ae;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.026);
+}
+
+.access-status strong {
+  color: #ffffff;
+  font-size: 18px;
+}
+
+.status-2xx strong,
+.status-3xx strong {
+  color: #a9ffcc;
+}
+
+.status-4xx strong,
+.status-5xx strong {
+  color: #ffb3b3;
+}
+
+.access-client-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.access-notes-panel ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0 0 0 18px;
+  color: #9eb2a5;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.access-empty {
+  margin: 0;
+  color: #8ea296;
+  font-size: 14px;
+}
+
 .site-footer {
   display: flex;
   justify-content: space-between;
@@ -942,12 +1320,22 @@ textarea:focus {
   .hero-grid,
   .location-grid,
   .section-heading,
-  .editor-grid {
+  .editor-grid,
+  .access-page-hero,
+  .access-geo-grid,
+  .access-traffic-grid,
+  .access-client-grid {
     grid-template-columns: 1fr;
   }
 
   .hero-copy {
     max-width: none;
+  }
+
+  .access-summary-grid,
+  .access-rank-grid,
+  .access-period-shell {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .tool-links {
@@ -998,7 +1386,9 @@ textarea:focus {
   .ip-display,
   .detail-table > div,
   .mini-table > div,
-  .command-row {
+  .command-row,
+  .access-summary-grid,
+  .access-rank-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1025,5 +1415,33 @@ textarea:focus {
 
   .site-footer {
     display: grid;
+  }
+
+  .access-map {
+    min-height: 300px;
+  }
+
+  .access-bar-row div {
+    grid-template-columns: 1fr;
+  }
+
+  .access-trend {
+    gap: 5px;
+  }
+
+  .access-trend small {
+    display: none;
+  }
+
+  .access-period-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .access-period-tabs {
+    width: 100%;
+  }
+
+  .access-period-tabs button {
+    flex: 1 1 72px;
   }
 }

@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -26,6 +27,8 @@ type config struct {
 	GeoIPURL          string        `default:"https://updates.maxmind.com"`
 	GeoIPRetryFor     time.Duration `default:"5s"`
 	GeoIPDataExpiry   time.Duration `default:"168h"`
+
+	AccessInsightsFile string `split_words:"true"`
 }
 
 func (c *config) NewGeoIPupdateConfig() *geoipupdate.Config {
@@ -42,9 +45,10 @@ func (c *config) NewGeoIPupdateConfig() *geoipupdate.Config {
 
 type Handler struct {
 	*GeoIPDBs
-	staticFileHandler http.Handler
-	vfs               fs.FS
-	htmls             map[string]bool
+	staticFileHandler  http.Handler
+	vfs                fs.FS
+	htmls              map[string]bool
+	accessInsightsFile string
 }
 
 func isUAofCLI(uas []string) bool {
@@ -135,6 +139,22 @@ func (h *Handler) writeOtherPath(w http.ResponseWriter, req *http.Request) {
 	h.writeHTML(w, req)
 }
 
+func (h *Handler) writeAccessInsights(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet && req.Method != http.MethodHead {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	if h.accessInsightsFile != "" {
+		if fi, err := os.Stat(h.accessInsightsFile); err == nil && fi.Mode().IsRegular() {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			http.ServeFile(w, req, h.accessInsightsFile)
+			return
+		}
+	}
+	req.URL.Path = "/access-insights.json"
+	h.staticFileHandler.ServeHTTP(w, req)
+}
+
 func (h *Handler) updateDBsCron() {
 	c := time.Tick(24 * time.Hour)
 	for range c {
@@ -174,10 +194,11 @@ func main() {
 	}
 	log.Printf("htmls:%v", htmls)
 	h := &Handler{
-		GeoIPDBs:          NewGeoIPDBs(c.NewGeoIPupdateConfig(), c.GeoIPDataExpiry),
-		staticFileHandler: http.FileServer(http.FS(vfs)),
-		vfs:               vfs,
-		htmls:             map[string]bool{},
+		GeoIPDBs:           NewGeoIPDBs(c.NewGeoIPupdateConfig(), c.GeoIPDataExpiry),
+		staticFileHandler:  http.FileServer(http.FS(vfs)),
+		vfs:                vfs,
+		htmls:              map[string]bool{},
+		accessInsightsFile: c.AccessInsightsFile,
 	}
 	for _, html := range htmls {
 		h.htmls[html] = true
@@ -192,6 +213,7 @@ func main() {
 	http.HandleFunc("/json", h.writeJSON)
 	http.HandleFunc("/ip", h.writeIP)
 	http.HandleFunc("/ip/", h.writeIP)
+	http.HandleFunc("/access-insights.json", h.writeAccessInsights)
 	http.HandleFunc("/", h.root)
 	log.Printf("ListenAndServe: %s", c.ListenAddr)
 	log.Fatal(http.ListenAndServe(c.ListenAddr, nil))
