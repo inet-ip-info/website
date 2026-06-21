@@ -304,6 +304,7 @@ const translations = {
     "access.estimatedPeakDay": "Estimated peak day",
     "access.estimatedRange": "{from} - {to}",
     "access.estimatedCoverage": "{count} days estimated",
+    "access.observedPlusEstimated": "{observed} observed + {estimated} estimated",
     "access.geoTitle": "Request geography",
     "access.geoText": "GeoIP is aggregated for operations visibility. Raw visitor IP addresses are not published in this page data.",
     "access.mapFallback": "No location data yet",
@@ -460,6 +461,7 @@ const translations = {
     "access.estimatedPeakDay": "推定ピーク日",
     "access.estimatedRange": "{from} - {to}",
     "access.estimatedCoverage": "{count} 日分の推定",
+    "access.observedPlusEstimated": "実測 {observed} + 推定 {estimated}",
     "access.geoTitle": "リクエスト元の地域",
     "access.geoText": "GeoIP は運用状況を把握するために集計します。このページ用データには訪問元 IP アドレスの生値を公開しません。",
     "access.mapFallback": "位置情報データはまだありません",
@@ -2802,6 +2804,13 @@ function renderAccessPeriod(data: AccessInsights, periods: AccessPeriod[]): void
   requiredElement("#access-notes").innerHTML = period.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("");
 }
 
+function accessPeakPoint(data: AccessPeriod): AccessHour {
+  return data.hourlyRequests.reduce<AccessHour>((peak, point) => (point.requests > peak.requests ? point : peak), {
+    hour: "",
+    requests: data.summary.peakHourRequests,
+  });
+}
+
 function renderAccessSummary(data: AccessPeriod, estimate?: AccessHistoricalEstimate): string {
   const peakLabel = isDailyAccessPeriod(data) ? t("access.peakDay") : t("access.peakHour");
   const estimateRange = estimate
@@ -2810,19 +2819,36 @@ function renderAccessSummary(data: AccessPeriod, estimate?: AccessHistoricalEsti
         to: formatDate(estimate.to),
       })
     : "";
+  const observedRequests = data.summary.totalRequests;
+  const requestValue = estimate ? observedRequests + estimate.totalRequests : observedRequests;
+  const requestDetail = estimate
+    ? `${tf("access.observedPlusEstimated", {
+        observed: formatCount(observedRequests),
+        estimated: formatCount(estimate.totalRequests),
+      })} / ${estimateRange}`
+    : "";
+  const observedPeak = accessPeakPoint(data);
+  const estimatePeakWins = estimate !== undefined && estimate.peakDayRequests >= observedPeak.requests;
+  const peakValue = estimatePeakWins && estimate ? estimate.peakDayRequests : observedPeak.requests;
+  const peakDetail =
+    estimatePeakWins && estimate
+      ? `${formatDate(estimate.peakDay)} / ${tf("access.estimatedCoverage", { count: estimate.coverageDays })}`
+      : observedPeak.hour
+        ? formatDateTime(observedPeak.hour)
+        : "";
   const metrics = [
     {
       label: t("access.requests"),
-      value: formatCount(estimate?.totalRequests ?? data.summary.totalRequests),
+      value: formatCount(requestValue),
       tone: "strong",
-      detail: estimateRange,
+      detail: requestDetail,
     },
     { label: t("access.visitors"), value: formatCount(data.summary.uniqueVisitors), tone: "" },
     {
       label: peakLabel,
-      value: formatCount(estimate?.peakDayRequests ?? data.summary.peakHourRequests),
+      value: formatCount(peakValue),
       tone: "",
-      detail: estimate ? `${formatDate(estimate.peakDay)} / ${tf("access.estimatedCoverage", { count: estimate.coverageDays })}` : "",
+      detail: peakDetail,
     },
     { label: t("access.successRate"), value: formatPercent(data.summary.successRate), tone: "good" },
   ];
