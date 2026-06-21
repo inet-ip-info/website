@@ -521,6 +521,7 @@ textarea:focus {
 }
 
 .panel-topline {
+  grid-template-columns: 1fr;
   padding: 16px 20px;
   border-bottom: 1px solid rgba(221, 255, 234, 0.09);
   background: rgba(255, 255, 255, 0.03);
@@ -633,7 +634,12 @@ textarea:focus {
 
 .location-map {
   position: relative;
-  min-height: 292px;
+  isolation: isolate;
+  aspect-ratio: 2 / 1;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
   background: linear-gradient(rgba(209, 255, 226, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(209, 255, 226, 0.05) 1px, transparent 1px),
@@ -654,14 +660,6 @@ textarea:focus {
   stroke: rgba(214, 255, 232, 0.22);
   stroke-width: 0.8;
   vector-effect: non-scaling-stroke;
-}
-
-.location-map strong {
-  position: absolute;
-  left: 28px;
-  bottom: 24px;
-  color: #f4fff7;
-  font-size: 28px;
 }
 
 .location-map small {
@@ -970,44 +968,6 @@ textarea:focus {
   grid-template-columns: repeat(4, 1fr);
 }
 
-.access-history-panel {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 14px;
-  padding: 18px;
-  border: 1px solid rgba(209, 255, 228, 0.13);
-  border-radius: 8px;
-  background: rgba(209, 255, 228, 0.04);
-}
-
-.access-history-panel[hidden] {
-  display: none;
-}
-
-.access-history-panel div {
-  display: grid;
-  gap: 8px;
-}
-
-.access-history-panel span,
-.access-history-panel small {
-  color: #8ea296;
-}
-
-.access-history-panel span {
-  font-size: 12px;
-  font-weight: 760;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.access-history-panel strong {
-  color: #ffffff;
-  font-size: 22px;
-  line-height: 1.25;
-}
-
 .access-metric,
 .access-panel {
   border: 1px solid rgba(209, 255, 228, 0.13);
@@ -1041,6 +1001,13 @@ textarea:focus {
   line-height: 1;
 }
 
+.access-metric small {
+  align-self: end;
+  color: #8ea296;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .access-metric.strong strong,
 .access-metric.good strong {
   color: #a9ffcc;
@@ -1052,11 +1019,17 @@ textarea:focus {
 
 .access-geo-grid {
   grid-template-columns: minmax(0, 1fr) minmax(300px, 0.48fr);
-  align-items: stretch;
+  align-items: start;
 }
 
 .access-map {
-  min-height: 420px;
+  z-index: 0;
+  min-height: 0;
+}
+
+.access-country-panel {
+  position: relative;
+  z-index: 2;
 }
 
 .access-map .world-map path {
@@ -1497,7 +1470,7 @@ textarea:focus {
   }
 
   .access-map {
-    min-height: 300px;
+    min-height: 0;
   }
 
   .access-bar-row div {
@@ -1513,10 +1486,6 @@ textarea:focus {
   }
 
   .access-period-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .access-history-panel {
     grid-template-columns: 1fr;
   }
 
