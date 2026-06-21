@@ -130,8 +130,6 @@ type AccessPeriod = {
 type AccessHistoricalEstimate = {
   id: string;
   label: string;
-  source: string;
-  metricName: string;
   from: string;
   to: string;
   totalRequests: number;
@@ -305,7 +303,7 @@ const translations = {
     "access.estimatedRequests": "Estimated requests",
     "access.estimatedPeakDay": "Estimated peak day",
     "access.estimatedRange": "{from} - {to}",
-    "access.estimatedSource": "Source: {source}",
+    "access.estimatedCoverage": "{count} days estimated",
     "access.geoTitle": "Request geography",
     "access.geoText": "GeoIP is aggregated for operations visibility. Raw visitor IP addresses are not published in this page data.",
     "access.mapFallback": "No location data yet",
@@ -461,7 +459,7 @@ const translations = {
     "access.estimatedRequests": "推定リクエスト",
     "access.estimatedPeakDay": "推定ピーク日",
     "access.estimatedRange": "{from} - {to}",
-    "access.estimatedSource": "出典: {source}",
+    "access.estimatedCoverage": "{count} 日分の推定",
     "access.geoTitle": "リクエスト元の地域",
     "access.geoText": "GeoIP は運用状況を把握するために集計します。このページ用データには訪問元 IP アドレスの生値を公開しません。",
     "access.mapFallback": "位置情報データはまだありません",
@@ -1652,8 +1650,6 @@ const SAMPLE_ACCESS_INSIGHTS: AccessInsights = {
     {
       id: "1y",
       label: "1y",
-      source: "Mackerel host metrics",
-      metricName: "custom.nginx.requests.requests",
       from: "2025-06-22T00:00:00Z",
       to: "2026-06-08T00:00:00Z",
       totalRequests: 6120000,
@@ -2813,7 +2809,7 @@ function renderAccessHistory(data: AccessInsights, period: AccessPeriod): void {
     <div>
       <span>${escapeHtml(t("access.estimatedPeakDay"))}</span>
       <strong>${escapeHtml(formatDate(estimate.peakDay))}: ${escapeHtml(formatCount(estimate.peakDayRequests))}</strong>
-      <small>${escapeHtml(tf("access.estimatedSource", { source: estimate.source }))}</small>
+      <small>${escapeHtml(tf("access.estimatedCoverage", { count: estimate.coverageDays }))}</small>
     </div>
   `;
 }

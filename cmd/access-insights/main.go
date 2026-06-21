@@ -174,8 +174,6 @@ type periodDocument struct {
 type historicalEstimate struct {
 	ID              string   `json:"id"`
 	Label           string   `json:"label"`
-	Source          string   `json:"source"`
-	MetricName      string   `json:"metricName"`
 	From            string   `json:"from"`
 	To              string   `json:"to"`
 	TotalRequests   int64    `json:"totalRequests"`
