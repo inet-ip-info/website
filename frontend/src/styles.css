@@ -32,7 +32,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -171,6 +172,37 @@ textarea,
   background: rgba(222, 255, 233, 0.08);
 }
 
+.header-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 0;
+}
+
+.language-picker {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.language-picker select {
+  min-height: 38px;
+  max-width: 150px;
+  border: 1px solid rgba(122, 255, 186, 0.18);
+  border-radius: 8px;
+  outline: none;
+  background: #0b130e;
+  color: #d7ffe6;
+  font-size: 12px;
+  font-weight: 680;
+  cursor: pointer;
+}
+
+.language-picker select:focus {
+  border-color: rgba(108, 255, 183, 0.58);
+  box-shadow: 0 0 0 4px rgba(108, 255, 183, 0.09);
+}
+
 .nav-ip {
   display: inline-flex;
   gap: 8px;
@@ -187,6 +219,15 @@ textarea,
 
 .nav-ip span {
   color: #8fa596;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 
 main {
@@ -835,6 +876,10 @@ textarea:focus {
     width: fit-content;
   }
 
+  .header-actions {
+    justify-content: flex-start;
+  }
+
   .home-hero {
     min-height: 0;
     padding-top: 48px;
@@ -887,7 +932,17 @@ textarea:focus {
   .nav-links a {
     justify-content: center;
     min-width: 0;
+    line-height: 1.2;
     text-align: center;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .language-picker select {
+    max-width: 100%;
   }
 
   h1,
