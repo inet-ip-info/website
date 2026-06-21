@@ -2569,14 +2569,14 @@ function renderAccessInsights(): void {
       </div>
       <div class="access-geo-grid">
         <div class="location-map access-map" id="access-map" aria-label="${escapeHtml(t("access.geoTitle"))}"></div>
-        <div class="access-panel">
+        <div class="access-panel access-country-panel">
           <h3>${escapeHtml(t("access.topCountries"))}</h3>
-          <div class="access-bar-list" id="access-countries"></div>
+          <div class="access-bar-list access-scroll-list access-country-list" id="access-countries"></div>
         </div>
       </div>
       <div class="access-panel access-wide-panel">
         <h3>${escapeHtml(t("access.topLocations"))}</h3>
-        <div class="access-rank-grid" id="access-locations"></div>
+        <div class="access-rank-grid access-scroll-list access-location-list" id="access-locations"></div>
       </div>
     </section>
     <section class="content-section access-section">
@@ -2778,7 +2778,7 @@ function renderAccessPeriod(data: AccessInsights, periods: AccessPeriod[]): void
   renderAccessHistory(data, period);
   requiredElement("#access-map").innerHTML = renderAccessMap(period);
   requiredElement("#access-countries").innerHTML = renderAccessBarList(period.topCountries);
-  requiredElement("#access-locations").innerHTML = renderAccessRankGrid(period.topLocations.slice(0, 12));
+  requiredElement("#access-locations").innerHTML = renderAccessRankGrid(period.topLocations);
   requiredElement("#access-trend").innerHTML = renderAccessTrend(period.hourlyRequests, period);
   requiredElement("#access-status").innerHTML = renderAccessStatuses(period.statusCodes);
   requiredElement("#access-endpoints").innerHTML = renderAccessBarList(period.topEndpoints);
@@ -2835,17 +2835,30 @@ function renderAccessSummary(data: AccessPeriod): string {
 }
 
 function renderAccessMap(data: AccessPeriod): string {
-  const mapLocations = data.topLocations.slice(0, 200);
+  const mapLocations = data.topLocations
+    .filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
+    .slice(0, 200);
   const maxRequests = Math.max(1, ...mapLocations.map((item) => item.requests));
+  const coordinateHits = new Map<string, number>();
   const markers = mapLocations
-    .map((item) => {
+    .map((item, index) => {
       const x = ((item.longitude + 180) / 360) * 100;
       const y = ((90 - item.latitude) / 180) * 100;
-      const size = 7 + (item.requests / maxRequests) * 21;
+      const ratio = Math.max(0, item.requests / maxRequests);
+      const scaledRatio = Math.sqrt(ratio);
+      const size = 9 + scaledRatio * 17;
+      const opacity = 0.72 + scaledRatio * 0.26;
+      const coordinateKey = `${Math.round(x / 2)}:${Math.round(y / 2)}`;
+      const overlapIndex = coordinateHits.get(coordinateKey) ?? 0;
+      coordinateHits.set(coordinateKey, overlapIndex + 1);
+      const jitterAngle = overlapIndex * 2.399963229728653;
+      const jitterRadius = overlapIndex === 0 ? 0 : Math.min(28, 6 + Math.sqrt(overlapIndex) * 4.2);
+      const jitterX = Math.cos(jitterAngle) * jitterRadius;
+      const jitterY = Math.sin(jitterAngle) * jitterRadius * 0.68;
       return `
         <span
           class="access-map-marker"
-          style="left: ${clamp(x, 0, 100)}%; top: ${clamp(y, 0, 100)}%; width: ${size}px; height: ${size}px"
+          style="left: calc(${clamp(x, 0, 100)}% + ${jitterX.toFixed(1)}px); top: calc(${clamp(y, 0, 100)}% + ${jitterY.toFixed(1)}px); width: ${size.toFixed(1)}px; height: ${size.toFixed(1)}px; opacity: ${opacity.toFixed(2)}; z-index: ${index + 3}"
           title="${escapeHtml(`${item.label}: ${formatCount(item.requests)}`)}"
         ></span>
       `;

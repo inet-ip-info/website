@@ -1068,13 +1068,14 @@ textarea:focus {
   position: absolute;
   z-index: 3;
   transform: translate(-50%, -50%);
-  border: 1px solid #06100a;
+  border: 1px solid rgba(4, 15, 8, 0.95);
   border-radius: 50%;
-  background: #6effb8;
-  opacity: 0.86;
+  background: radial-gradient(circle at 38% 34%, #ecfff5 0 18%, #8dffd4 24% 58%, #40dd9b 72%);
   box-shadow:
-    0 0 0 4px rgba(110, 255, 184, 0.12),
-    0 0 22px rgba(110, 255, 184, 0.5);
+    0 0 0 3px rgba(110, 255, 184, 0.24),
+    0 0 0 9px rgba(110, 255, 184, 0.08),
+    0 0 22px rgba(110, 255, 184, 0.64);
+  outline: 1px solid rgba(194, 255, 219, 0.38);
 }
 
 .access-panel {
@@ -1093,6 +1094,32 @@ textarea:focus {
 .access-bar-list {
   display: grid;
   gap: 14px;
+}
+
+.access-scroll-list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(110, 255, 184, 0.46) rgba(219, 255, 231, 0.08);
+}
+
+.access-scroll-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.access-scroll-list::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(219, 255, 231, 0.08);
+}
+
+.access-scroll-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(110, 255, 184, 0.46);
+}
+
+.access-country-list {
+  max-height: 600px;
 }
 
 .access-bar-row {
@@ -1149,6 +1176,10 @@ textarea:focus {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 10px;
+}
+
+.access-location-list {
+  max-height: 246px;
 }
 
 .access-rank-grid article {
@@ -1377,6 +1408,10 @@ textarea:focus {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .access-location-list {
+    max-height: 630px;
+  }
+
   .tool-links {
     grid-template-columns: 1fr;
   }
@@ -1441,6 +1476,11 @@ textarea:focus {
 
   .content-section {
     padding-top: 64px;
+  }
+
+  .access-country-list,
+  .access-location-list {
+    max-height: 560px;
   }
 
   .section-heading h2 {
