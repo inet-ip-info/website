@@ -2,10 +2,7 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"compress/gzip"
-	"container/heap"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,21 +11,28 @@ import (
 	"log"
 	"math"
 	"math/bits"
-	"net/http"
+	"net"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/oschwald/geoip2-golang"
 )
 
 const (
-	outputPath     = "/var/lib/inet-ip-info/access-insights.json"
-	geoEndpoint    = "http://127.0.0.1:8888/json"
-	topN           = 8
-	geoIPLimit     = 120
-	ipCounterLimit = 1024
+	outputPath    = "/var/lib/inet-ip-info/access-insights.json"
+	topN          = 8
+	topLocationN  = 200
+	geoCacheLimit = 200000
+
+	defaultGeoIPDatabaseDir = "/var/lib/inet-ip.info/data"
+	geoASNDatabase          = "GeoLite2-ASN.mmdb"
+	geoCityDatabase         = "GeoLite2-City.mmdb"
+
+	defaultHistoricalEstimatesPath = "/var/lib/inet-ip-info/access-insights-history.json"
 )
 
 var logPaths = []string{
@@ -59,33 +63,41 @@ type periodSpec struct {
 }
 
 type dayAggregate struct {
-	day        string
-	midnight   string
-	total      int64
-	success    int64
-	unique     *hll
-	ips        *spaceSaving
-	endpoints  map[string]int64
-	userAgents map[string]int64
-	status     map[string]int64
-	hours      map[string]int64
-	firstSeen  time.Time
-	lastSeen   time.Time
+	day           string
+	midnight      string
+	total         int64
+	success       int64
+	unique        *hll
+	countries     map[string]countryRow
+	locations     map[string]locationRow
+	asns          map[string]asnRow
+	endpoints     map[string]int64
+	userAgents    map[string]int64
+	status        map[string]int64
+	hours         map[string]int64
+	geoResolved   int64
+	geoUnresolved int64
+	firstSeen     time.Time
+	lastSeen      time.Time
 }
 
 type combinedAggregate struct {
-	spec       periodSpec
-	total      int64
-	success    int64
-	unique     *hll
-	ips        *spaceSaving
-	endpoints  map[string]int64
-	userAgents map[string]int64
-	status     map[string]int64
-	trend      map[string]int64
-	firstSeen  time.Time
-	lastSeen   time.Time
-	seen       bool
+	spec          periodSpec
+	total         int64
+	success       int64
+	unique        *hll
+	countries     map[string]countryRow
+	locations     map[string]locationRow
+	asns          map[string]asnRow
+	endpoints     map[string]int64
+	userAgents    map[string]int64
+	status        map[string]int64
+	trend         map[string]int64
+	geoResolved   int64
+	geoUnresolved int64
+	firstSeen     time.Time
+	lastSeen      time.Time
+	seen          bool
 }
 
 type record struct {
@@ -159,25 +171,40 @@ type periodDocument struct {
 	Notes          []string      `json:"notes"`
 }
 
+type historicalEstimate struct {
+	ID              string   `json:"id"`
+	Label           string   `json:"label"`
+	From            string   `json:"from"`
+	To              string   `json:"to"`
+	TotalRequests   int64    `json:"totalRequests"`
+	PeakDay         string   `json:"peakDay"`
+	PeakDayRequests int64    `json:"peakDayRequests"`
+	SampleCount     int      `json:"sampleCount"`
+	CoverageDays    int      `json:"coverageDays"`
+	Estimated       bool     `json:"estimated"`
+	Notes           []string `json:"notes"`
+}
+
 type accessDocument struct {
-	ID             string           `json:"id"`
-	Label          string           `json:"label"`
-	Description    string           `json:"description"`
-	GeneratedAt    string           `json:"generatedAt"`
-	WindowHours    int              `json:"windowHours"`
-	Source         string           `json:"source"`
-	Summary        summary          `json:"summary"`
-	TopCountries   []countryRow     `json:"topCountries"`
-	TopLocations   []locationRow    `json:"topLocations"`
-	TopAsns        []asnRow         `json:"topAsns"`
-	TopEndpoints   []labelRow       `json:"topEndpoints"`
-	StatusCodes    []statusRow      `json:"statusCodes"`
-	UserAgents     []labelRow       `json:"userAgents"`
-	HourlyRequests []hourRow        `json:"hourlyRequests"`
-	Notes          []string         `json:"notes"`
-	Sample         bool             `json:"sample"`
-	DefaultPeriod  string           `json:"defaultPeriod"`
-	Periods        []periodDocument `json:"periods"`
+	ID                  string               `json:"id"`
+	Label               string               `json:"label"`
+	Description         string               `json:"description"`
+	GeneratedAt         string               `json:"generatedAt"`
+	WindowHours         int                  `json:"windowHours"`
+	Source              string               `json:"source"`
+	Summary             summary              `json:"summary"`
+	TopCountries        []countryRow         `json:"topCountries"`
+	TopLocations        []locationRow        `json:"topLocations"`
+	TopAsns             []asnRow             `json:"topAsns"`
+	TopEndpoints        []labelRow           `json:"topEndpoints"`
+	StatusCodes         []statusRow          `json:"statusCodes"`
+	UserAgents          []labelRow           `json:"userAgents"`
+	HourlyRequests      []hourRow            `json:"hourlyRequests"`
+	Notes               []string             `json:"notes"`
+	Sample              bool                 `json:"sample"`
+	DefaultPeriod       string               `json:"defaultPeriod"`
+	Periods             []periodDocument     `json:"periods"`
+	HistoricalEstimates []historicalEstimate `json:"historicalEstimates,omitempty"`
 }
 
 func main() {
@@ -186,9 +213,15 @@ func main() {
 	log.Printf("access insights build start output=%s", outputPath)
 
 	now := time.Now()
+	geoResolver, err := newGeoResolver()
+	if err != nil {
+		log.Fatalf("open geoip databases failed: %v", err)
+	}
+	defer geoResolver.Close()
+
 	days := map[string]*dayAggregate{}
 	for _, path := range logPaths {
-		lines, records, err := readLog(path, days)
+		lines, records, err := readLog(path, days, geoResolver)
 		if err != nil {
 			log.Fatalf("read %s failed: %v", path, err)
 		}
@@ -196,43 +229,44 @@ func main() {
 	}
 
 	orderedDays := sortedDays(days)
-	log.Printf("aggregate complete days=%d elapsed=%s", len(orderedDays), time.Since(start).Round(time.Second))
+	log.Printf("aggregate complete days=%d geo_cache_entries=%d elapsed=%s", len(orderedDays), geoResolver.cacheSize(), time.Since(start).Round(time.Second))
 
 	source := sourceLabel(logPaths)
 	generatedAt := now.Format(time.RFC3339)
-	client := &http.Client{Timeout: 2500 * time.Millisecond}
 	specs := periodSpecs(now)
 	periods := make([]periodDocument, 0, len(specs))
 	for _, spec := range specs {
 		combined := combineDays(spec, orderedDays)
 		log.Printf("period build start id=%s requests=%d", spec.ID, combined.total)
-		periods = append(periods, buildPeriodDocument(context.Background(), client, combined, generatedAt, source))
+		periods = append(periods, buildPeriodDocument(combined, generatedAt, source))
 		log.Printf("period build complete id=%s elapsed=%s", spec.ID, time.Since(start).Round(time.Second))
 	}
 	if len(periods) == 0 {
 		log.Fatal("no period documents generated")
 	}
+	historicalEstimates := loadHistoricalEstimates()
 
 	allDoc := periods[len(periods)-1]
 	doc := accessDocument{
-		ID:             allDoc.ID,
-		Label:          allDoc.Label,
-		Description:    allDoc.Description,
-		GeneratedAt:    allDoc.GeneratedAt,
-		WindowHours:    allDoc.WindowHours,
-		Source:         allDoc.Source,
-		Summary:        allDoc.Summary,
-		TopCountries:   allDoc.TopCountries,
-		TopLocations:   allDoc.TopLocations,
-		TopAsns:        allDoc.TopAsns,
-		TopEndpoints:   allDoc.TopEndpoints,
-		StatusCodes:    allDoc.StatusCodes,
-		UserAgents:     allDoc.UserAgents,
-		HourlyRequests: allDoc.HourlyRequests,
-		Notes:          allDoc.Notes,
-		Sample:         false,
-		DefaultPeriod:  "all",
-		Periods:        periods,
+		ID:                  allDoc.ID,
+		Label:               allDoc.Label,
+		Description:         allDoc.Description,
+		GeneratedAt:         allDoc.GeneratedAt,
+		WindowHours:         allDoc.WindowHours,
+		Source:              allDoc.Source,
+		Summary:             allDoc.Summary,
+		TopCountries:        allDoc.TopCountries,
+		TopLocations:        allDoc.TopLocations,
+		TopAsns:             allDoc.TopAsns,
+		TopEndpoints:        allDoc.TopEndpoints,
+		StatusCodes:         allDoc.StatusCodes,
+		UserAgents:          allDoc.UserAgents,
+		HourlyRequests:      allDoc.HourlyRequests,
+		Notes:               allDoc.Notes,
+		Sample:              false,
+		DefaultPeriod:       "all",
+		Periods:             periods,
+		HistoricalEstimates: historicalEstimates,
 	}
 	if err := writeAtomic(outputPath, doc); err != nil {
 		log.Fatalf("write output failed: %v", err)
@@ -253,7 +287,7 @@ func periodSpecs(now time.Time) []periodSpec {
 	}
 }
 
-func readLog(path string, days map[string]*dayAggregate) (int64, int64, error) {
+func readLog(path string, days map[string]*dayAggregate, geoResolver *geoResolver) (int64, int64, error) {
 	file, err := os.Open(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return 0, 0, nil
@@ -291,7 +325,7 @@ func readLog(path string, days map[string]*dayAggregate) (int64, int64, error) {
 			day = newDayAggregate(key, rec.when)
 			days[key] = day
 		}
-		day.add(rec)
+		day.add(rec, geoResolver)
 	}
 	if err := scanner.Err(); err != nil {
 		return lines, records, err
@@ -307,7 +341,9 @@ func newDayAggregate(day string, when time.Time) *dayAggregate {
 		day:        day,
 		midnight:   midnight,
 		unique:     newHLL(14),
-		ips:        newSpaceSaving(ipCounterLimit),
+		countries:  map[string]countryRow{},
+		locations:  map[string]locationRow{},
+		asns:       map[string]asnRow{},
 		endpoints:  map[string]int64{},
 		userAgents: map[string]int64{},
 		status:     map[string]int64{},
@@ -315,17 +351,25 @@ func newDayAggregate(day string, when time.Time) *dayAggregate {
 	}
 }
 
-func (d *dayAggregate) add(rec record) {
+func (d *dayAggregate) add(rec record, geoResolver *geoResolver) {
 	d.total++
 	if strings.HasPrefix(rec.status, "2") || strings.HasPrefix(rec.status, "3") {
 		d.success++
 	}
 	d.unique.add(rec.ip)
-	d.ips.add(rec.ip, 1)
 	d.endpoints[normalizeEndpoint(rec.target)]++
 	d.userAgents[classifyUserAgent(rec.userAgent)]++
 	d.status[rec.status]++
 	d.hours[hourKey(rec.when)]++
+	if geoResolver != nil {
+		entry, ok := geoResolver.lookup(rec.ip)
+		if ok {
+			d.geoResolved++
+		} else {
+			d.geoUnresolved++
+		}
+		addGeoEntry(d.countries, d.locations, d.asns, entry, 1)
+	}
 	if d.firstSeen.IsZero() || rec.when.Before(d.firstSeen) {
 		d.firstSeen = rec.when
 	}
@@ -469,7 +513,9 @@ func combineDays(spec periodSpec, days []*dayAggregate) *combinedAggregate {
 	result := &combinedAggregate{
 		spec:       spec,
 		unique:     newHLL(14),
-		ips:        newSpaceSaving(ipCounterLimit),
+		countries:  map[string]countryRow{},
+		locations:  map[string]locationRow{},
+		asns:       map[string]asnRow{},
 		endpoints:  map[string]int64{},
 		userAgents: map[string]int64{},
 		status:     map[string]int64{},
@@ -482,12 +528,14 @@ func combineDays(spec periodSpec, days []*dayAggregate) *combinedAggregate {
 		result.total += day.total
 		result.success += day.success
 		result.unique.merge(day.unique)
-		for _, entry := range day.ips.entries(geoIPLimit) {
-			result.ips.add(entry.key, entry.count)
-		}
+		addCountries(result.countries, day.countries)
+		addLocations(result.locations, day.locations)
+		addASNs(result.asns, day.asns)
 		addMap(result.endpoints, day.endpoints)
 		addMap(result.userAgents, day.userAgents)
 		addMap(result.status, day.status)
+		result.geoResolved += day.geoResolved
+		result.geoUnresolved += day.geoUnresolved
 		if spec.WindowHours > 48 {
 			result.trend[day.midnight] += day.total
 		} else {
@@ -510,8 +558,26 @@ func addMap(dst, src map[string]int64) {
 	}
 }
 
-func buildPeriodDocument(ctx context.Context, client *http.Client, agg *combinedAggregate, generatedAt, source string) periodDocument {
-	countries, locations, asns, enriched := enrichGeo(ctx, client, agg.ips.entries(geoIPLimit), agg.total)
+func addCountries(dst map[string]countryRow, src map[string]countryRow) {
+	for _, row := range src {
+		addCountry(dst, row.Code, row.Name, row.Requests)
+	}
+}
+
+func addLocations(dst map[string]locationRow, src map[string]locationRow) {
+	for _, row := range src {
+		key := fmt.Sprintf("%s|%s|%.3f|%.3f", row.Label, row.CountryCode, row.Latitude, row.Longitude)
+		addLocation(dst, key, row.Label, row.CountryCode, row.Latitude, row.Longitude, row.Requests)
+	}
+}
+
+func addASNs(dst map[string]asnRow, src map[string]asnRow) {
+	for _, row := range src {
+		addASN(dst, row.Label, row.Requests)
+	}
+}
+
+func buildPeriodDocument(agg *combinedAggregate, generatedAt, source string) periodDocument {
 	hours := hourRows(agg.trend)
 	var peak int64
 	for _, row := range hours {
@@ -527,34 +593,60 @@ func buildPeriodDocument(ctx context.Context, client *http.Client, agg *combined
 		WindowHours:    agg.spec.WindowHours,
 		Source:         source,
 		Summary:        summary{TotalRequests: agg.total, UniqueVisitors: agg.unique.estimate(), PeakHourRequests: peak, SuccessRate: percent(agg.success, agg.total)},
-		TopCountries:   countries,
-		TopLocations:   locations,
-		TopAsns:        asns,
+		TopCountries:   rankedCountries(agg.countries, agg.total),
+		TopLocations:   rankedLocations(agg.locations, agg.total),
+		TopAsns:        rankedASNs(agg.asns, agg.total),
 		TopEndpoints:   labelRowsFromMap(agg.endpoints, agg.total),
 		StatusCodes:    statusRows(agg.status),
 		UserAgents:     labelRowsFromMap(agg.userAgents, agg.total),
 		HourlyRequests: hours,
-		Notes:          notes(agg, enriched),
+		Notes:          notes(agg),
 	}
 }
 
-func notes(agg *combinedAggregate, enriched int64) []string {
+func notes(agg *combinedAggregate) []string {
 	result := []string{
 		"Visitor IP addresses are aggregated in memory and are not written to this public JSON.",
 		"Endpoint labels strip query strings before counting to avoid publishing tokens or identifiers.",
-		"Unique visitor counts and top-IP based GeoIP enrichment are calculated with bounded-memory streaming structures.",
+		"GeoIP and ASN fields are counted for every parsed request during streaming aggregation; raw visitor IP addresses are not written to this public JSON.",
 	}
 	if agg.spec.IsAll {
 		result = append(result, "The all period covers all retained access-log inputs supplied to this run.")
 	} else if agg.total > 0 && agg.seen && agg.firstSeen.After(agg.spec.Since) {
 		result = append(result, fmt.Sprintf("Input logs for %s start at %s; older traffic is not included in this run.", agg.spec.Label, agg.firstSeen.UTC().Format(time.RFC3339)))
 	}
-	if enriched > 0 {
-		result = append(result, fmt.Sprintf("GeoIP enrichment covered %d of %d requests from the bounded top visitor IP set.", enriched, agg.total))
+	geoProcessed := agg.geoResolved + agg.geoUnresolved
+	if geoProcessed > 0 {
+		result = append(result, fmt.Sprintf("GeoIP and ASN enrichment processed %d of %d requests during streaming aggregation.", geoProcessed, agg.total))
+		if agg.geoUnresolved > 0 {
+			result = append(result, fmt.Sprintf("GeoIP lookup did not resolve country data for %d requests; those are grouped as Unknown / ZZ.", agg.geoUnresolved))
+		}
 	} else {
 		result = append(result, "GeoIP enrichment is disabled or unavailable; country, location and ASN sections may be empty.")
 	}
 	return result
+}
+
+func loadHistoricalEstimates() []historicalEstimate {
+	path := strings.TrimSpace(os.Getenv("ACCESS_INSIGHTS_HISTORY_FILE"))
+	if path == "" {
+		path = defaultHistoricalEstimatesPath
+	}
+	body, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		log.Printf("historical estimates skipped path=%s err=%v", path, err)
+		return nil
+	}
+	var estimates []historicalEstimate
+	if err := json.Unmarshal(body, &estimates); err != nil {
+		log.Printf("historical estimates skipped path=%s err=%v", path, err)
+		return nil
+	}
+	log.Printf("historical estimates loaded path=%s periods=%d", path, len(estimates))
+	return estimates
 }
 
 func sourceLabel(paths []string) string {
@@ -631,190 +723,168 @@ func (h *hll) estimate() int64 {
 	return int64(math.Round(est))
 }
 
-type counter struct {
-	key   string
-	count int64
-	index int
+type geoEntry struct {
+	countryCode   string
+	countryName   string
+	hasLocation   bool
+	locationKey   string
+	locationLabel string
+	latitude      float64
+	longitude     float64
+	hasASN        bool
+	asnLabel      string
 }
 
-type counterHeap []*counter
-
-func (h counterHeap) Len() int           { return len(h) }
-func (h counterHeap) Less(i, j int) bool { return h[i].count < h[j].count }
-func (h counterHeap) Swap(i, j int) {
-	h[i], h[j] = h[j], h[i]
-	h[i].index = i
-	h[j].index = j
-}
-func (h *counterHeap) Push(x any) {
-	item := x.(*counter)
-	item.index = len(*h)
-	*h = append(*h, item)
-}
-func (h *counterHeap) Pop() any {
-	old := *h
-	item := old[len(old)-1]
-	item.index = -1
-	*h = old[:len(old)-1]
-	return item
+type geoResolver struct {
+	asn        *geoip2.Reader
+	city       *geoip2.Reader
+	cache      map[string]geoEntry
+	cacheKeys  []string
+	cacheNext  int
+	cacheLimit int
 }
 
-type spaceSaving struct {
-	capacity int
-	items    map[string]*counter
-	heap     counterHeap
-}
-
-func newSpaceSaving(capacity int) *spaceSaving {
-	return &spaceSaving{capacity: capacity, items: map[string]*counter{}}
-}
-
-func (s *spaceSaving) add(key string, amount int64) {
-	if key == "" {
-		key = "(empty)"
+func newGeoResolver() (*geoResolver, error) {
+	dir := geoIPDatabaseDir()
+	asn, err := geoip2.Open(filepath.Join(dir, geoASNDatabase))
+	if err != nil {
+		return nil, fmt.Errorf("open %s: %w", geoASNDatabase, err)
 	}
-	if item, ok := s.items[key]; ok {
-		item.count += amount
-		heap.Fix(&s.heap, item.index)
+	city, err := geoip2.Open(filepath.Join(dir, geoCityDatabase))
+	if err != nil {
+		asn.Close()
+		return nil, fmt.Errorf("open %s: %w", geoCityDatabase, err)
+	}
+	log.Printf("open geoip databases dir=%s", dir)
+	return &geoResolver{
+		asn:        asn,
+		city:       city,
+		cache:      map[string]geoEntry{},
+		cacheLimit: geoCacheLimit,
+	}, nil
+}
+
+func geoIPDatabaseDir() string {
+	for _, key := range []string{"ACCESS_INSIGHTS_GEOIP_DIR", "GEOIP_DATABASE_DIR", "GEOIPDATABASEEDIR"} {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+			return value
+		}
+	}
+	return defaultGeoIPDatabaseDir
+}
+
+func (r *geoResolver) Close() {
+	if r == nil {
 		return
 	}
-	if len(s.items) < s.capacity {
-		item := &counter{key: key, count: amount}
-		s.items[key] = item
-		heap.Push(&s.heap, item)
+	if r.asn != nil {
+		r.asn.Close()
+	}
+	if r.city != nil {
+		r.city.Close()
+	}
+}
+
+func (r *geoResolver) cacheSize() int {
+	if r == nil {
+		return 0
+	}
+	return len(r.cache)
+}
+
+func (r *geoResolver) lookup(value string) (geoEntry, bool) {
+	if r == nil {
+		return unknownGeoEntry(), false
+	}
+	if entry, ok := r.cache[value]; ok {
+		return entry, entry.countryCode != "ZZ"
+	}
+
+	entry := unknownGeoEntry()
+	ip := net.ParseIP(value)
+	if ip == nil {
+		r.remember(value, entry)
+		return entry, false
+	}
+
+	city, cityErr := r.city.City(ip)
+	if cityErr == nil && city != nil {
+		if city.Country.IsoCode != "" {
+			entry.countryCode = city.Country.IsoCode
+			entry.countryName = nameFromMap(city.Country.Names)
+		} else if city.RegisteredCountry.IsoCode != "" {
+			entry.countryCode = city.RegisteredCountry.IsoCode
+			entry.countryName = nameFromMap(city.RegisteredCountry.Names)
+		}
+		if entry.countryName == "" {
+			entry.countryName = "Unknown"
+		}
+		if city.Location.Latitude != 0 || city.Location.Longitude != 0 {
+			cityName := nameFromMap(city.City.Names)
+			subdivision := ""
+			if len(city.Subdivisions) > 0 {
+				subdivision = nameFromMap(city.Subdivisions[0].Names)
+			}
+			entry.locationLabel = strings.Join(nonEmpty(cityName, subdivision, entry.countryName), ", ")
+			entry.locationKey = fmt.Sprintf("%s|%s|%.3f|%.3f", entry.locationLabel, entry.countryCode, city.Location.Latitude, city.Location.Longitude)
+			entry.latitude = city.Location.Latitude
+			entry.longitude = city.Location.Longitude
+			entry.hasLocation = entry.locationLabel != ""
+		}
+	}
+
+	asn, asnErr := r.asn.ASN(ip)
+	if asnErr == nil && asn != nil && (asn.AutonomousSystemNumber != 0 || asn.AutonomousSystemOrganization != "") {
+		label := strings.TrimSpace(asn.AutonomousSystemOrganization)
+		if asn.AutonomousSystemNumber != 0 {
+			label = strings.TrimSpace(fmt.Sprintf("AS%d %s", asn.AutonomousSystemNumber, label))
+		}
+		entry.asnLabel = label
+		entry.hasASN = label != ""
+	}
+
+	r.remember(value, entry)
+	return entry, entry.countryCode != "ZZ"
+}
+
+func (r *geoResolver) remember(key string, entry geoEntry) {
+	if r.cacheLimit <= 0 {
 		return
 	}
-	min := s.heap[0]
-	delete(s.items, min.key)
-	min.key = key
-	min.count += amount
-	s.items[key] = min
-	heap.Fix(&s.heap, min.index)
-}
-
-func (s *spaceSaving) entries(limit int) []counter {
-	rows := make([]counter, 0, len(s.items))
-	for _, item := range s.items {
-		rows = append(rows, counter{key: item.key, count: item.count})
+	if _, ok := r.cache[key]; ok {
+		r.cache[key] = entry
+		return
 	}
-	sort.Slice(rows, func(i, j int) bool {
-		if rows[i].count == rows[j].count {
-			return rows[i].key < rows[j].key
-		}
-		return rows[i].count > rows[j].count
-	})
-	if len(rows) > limit {
-		rows = rows[:limit]
+	if len(r.cache) < r.cacheLimit {
+		r.cache[key] = entry
+		r.cacheKeys = append(r.cacheKeys, key)
+		return
 	}
-	return rows
+	evict := r.cacheKeys[r.cacheNext]
+	delete(r.cache, evict)
+	r.cacheKeys[r.cacheNext] = key
+	r.cache[key] = entry
+	r.cacheNext = (r.cacheNext + 1) % r.cacheLimit
 }
 
-type geoResponse struct {
-	ASN  *geoASN  `json:"asn"`
-	City *geoCity `json:"city"`
+func unknownGeoEntry() geoEntry {
+	return geoEntry{countryCode: "ZZ", countryName: "Unknown"}
 }
 
-type geoASN struct {
-	Number       int    `json:"AutonomousSystemNumber"`
-	Organization string `json:"AutonomousSystemOrganization"`
-}
-
-type geoCity struct {
-	City              geoName     `json:"City"`
-	Country           geoCountry  `json:"Country"`
-	RegisteredCountry geoCountry  `json:"RegisteredCountry"`
-	Location          geoLocation `json:"Location"`
-	Subdivisions      []geoName   `json:"Subdivisions"`
-}
-
-type geoCountry struct {
-	IsoCode string            `json:"IsoCode"`
-	Names   map[string]string `json:"Names"`
-}
-
-type geoName struct {
-	Names map[string]string `json:"Names"`
-}
-
-type geoLocation struct {
-	Latitude  float64 `json:"Latitude"`
-	Longitude float64 `json:"Longitude"`
-}
-
-func enrichGeo(ctx context.Context, client *http.Client, topIPs []counter, total int64) ([]countryRow, []locationRow, []asnRow, int64) {
-	countries := map[string]countryRow{}
-	locations := map[string]locationRow{}
-	asns := map[string]asnRow{}
-	var enriched int64
-	for _, ipCounter := range topIPs {
-		geo, err := queryGeo(ctx, client, ipCounter.key)
-		if err != nil {
-			continue
-		}
-		requests := ipCounter.count
-		if requests > total-enriched {
-			requests = total - enriched
-		}
-		if requests <= 0 {
-			continue
-		}
-		enriched += requests
-		countryCode := "ZZ"
-		countryName := "Unknown"
-		if geo.City != nil {
-			if geo.City.Country.IsoCode != "" {
-				countryCode = geo.City.Country.IsoCode
-				countryName = nameFromMap(geo.City.Country.Names)
-			} else if geo.City.RegisteredCountry.IsoCode != "" {
-				countryCode = geo.City.RegisteredCountry.IsoCode
-				countryName = nameFromMap(geo.City.RegisteredCountry.Names)
-			}
-			if countryName == "" {
-				countryName = "Unknown"
-			}
-			addCountry(countries, countryCode, countryName, requests)
-			if geo.City.Location.Latitude != 0 || geo.City.Location.Longitude != 0 {
-				city := nameFromMap(geo.City.City.Names)
-				subdivision := ""
-				if len(geo.City.Subdivisions) > 0 {
-					subdivision = nameFromMap(geo.City.Subdivisions[0].Names)
-				}
-				label := strings.Join(nonEmpty(city, subdivision, countryName), ", ")
-				key := fmt.Sprintf("%s|%s|%.3f|%.3f", label, countryCode, geo.City.Location.Latitude, geo.City.Location.Longitude)
-				addLocation(locations, key, label, countryCode, geo.City.Location.Latitude, geo.City.Location.Longitude, requests)
-			}
-		} else {
-			addCountry(countries, countryCode, countryName, requests)
-		}
-		if geo.ASN != nil && (geo.ASN.Number != 0 || geo.ASN.Organization != "") {
-			label := strings.TrimSpace(fmt.Sprintf("AS%d %s", geo.ASN.Number, geo.ASN.Organization))
-			addASN(asns, label, requests)
-		}
+func addGeoEntry(countries map[string]countryRow, locations map[string]locationRow, asns map[string]asnRow, entry geoEntry, requests int64) {
+	if entry.countryCode == "" {
+		entry.countryCode = "ZZ"
 	}
-	if total > enriched {
-		addCountry(countries, "ZZ", "Unknown", total-enriched)
+	if entry.countryName == "" {
+		entry.countryName = "Unknown"
 	}
-	return rankedCountries(countries, total), rankedLocations(locations, total), rankedASNs(asns, total), enriched
-}
-
-func queryGeo(ctx context.Context, client *http.Client, ip string) (geoResponse, error) {
-	var result geoResponse
-	body, _ := json.Marshal(map[string]string{"ip": ip})
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, geoEndpoint, bytes.NewReader(body))
-	if err != nil {
-		return result, err
+	addCountry(countries, entry.countryCode, entry.countryName, requests)
+	if entry.hasLocation {
+		addLocation(locations, entry.locationKey, entry.locationLabel, entry.countryCode, entry.latitude, entry.longitude, requests)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		return result, err
+	if entry.hasASN {
+		addASN(asns, entry.asnLabel, requests)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return result, fmt.Errorf("geoip status %d", resp.StatusCode)
-	}
-	return result, json.NewDecoder(resp.Body).Decode(&result)
 }
 
 func nameFromMap(names map[string]string) string {
@@ -874,8 +944,8 @@ func rankedCountries(rows map[string]countryRow, total int64) []countryRow {
 		result = append(result, row)
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].Requests > result[j].Requests })
-	if len(result) > topN {
-		result = result[:topN]
+	if len(result) > topLocationN {
+		result = result[:topLocationN]
 	}
 	return result
 }

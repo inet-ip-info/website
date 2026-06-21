@@ -23,13 +23,23 @@ go run ./cmd/access-insights
 | 項目 | 値 |
 | --- | --- |
 | 入力 log | `/var/log/nginx/inet-ip.info.access.log` から `/var/log/nginx/inet-ip.info.access.log.14.gz` まで |
-| GeoIP endpoint | `http://127.0.0.1:8888/json` |
+| GeoIP database | `GeoLite2-ASN.mmdb`, `GeoLite2-City.mmdb` |
+| GeoIP database directory | `ACCESS_INSIGHTS_GEOIP_DIR`, `GEOIP_DATABASE_DIR`, `GEOIPDATABASEEDIR` の順に参照。未指定時は `/var/lib/inet-ip.info/data` |
 | 出力 JSON | `/var/lib/inet-ip-info/access-insights.json` |
+| 過去推定 JSON | `/var/lib/inet-ip-info/access-insights-history.json` |
 | 期間 | `24h`, `7d`, `14d`, `1m`, `3m`, `6m`, `1y`, `all` |
 
 生成器は日別に log を集約してから各期間を合成します。実行中は `read complete path=...`、`period build start/complete`、`access insights build complete` の進捗ログを出します。systemd timer で実行する場合は `journalctl -u inet-ip-info-access-insights.service` で追跡できます。
 
-`cmd/access-insights` は bounded-memory の集計器です。unique visitor 数は HyperLogLog 推定値、GeoIP / ASN enrichment は bounded top-IP set から取得します。
+`cmd/access-insights` は streaming 集計器です。unique visitor 数は HyperLogLog 推定値です。GeoIP / ASN は MaxMind mmdb を直接参照し、全リクエストを読み込みながら国、地域、ASN の集計値へ加算します。IP アドレスは上限付きのメモリキャッシュにだけ保持し、公開 JSON には出力しません。
+
+## 過去推定データ
+
+nginx access log より古い期間は、別途作成した過去リクエストレートの概算 JSON を、詳細 log 集計とは別の `historicalEstimates` として公開 JSON に含めます。
+
+日次の `cmd/access-insights` は外部 API を呼び出しません。`/var/lib/inet-ip-info/access-insights-history.json` が存在する場合だけ読み込み、公開 JSON に同梱します。
+
+過去推定データで表示するのはリクエスト総数とピーク日だけです。国、地域、ASN、endpoint、status code、user-agent family は access log の詳細集計にだけ含めます。
 
 ## 定期更新例
 
@@ -72,5 +82,5 @@ ACCESS_INSIGHTS_FILE=/var/lib/inet-ip-info/access-insights.json
 
 - query string は endpoint 集計前に破棄する。
 - raw visitor IP address は JSON に出力しない。
-- GeoIP / ASN enrichment は bounded top-IP set から取得する。
+- GeoIP / ASN は mmdb から全リクエストをストリーミング集計し、国名が解決できないものだけ `Unknown / ZZ` にまとめる。
 - JSON は一時ファイルへ書いてから rename するため、読み取り側に途中ファイルを見せない。

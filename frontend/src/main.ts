@@ -127,10 +127,25 @@ type AccessPeriod = {
   notes: string[];
 };
 
+type AccessHistoricalEstimate = {
+  id: string;
+  label: string;
+  from: string;
+  to: string;
+  totalRequests: number;
+  peakDay: string;
+  peakDayRequests: number;
+  sampleCount: number;
+  coverageDays: number;
+  estimated: boolean;
+  notes: string[];
+};
+
 type AccessInsights = AccessPeriod & {
   sample?: boolean;
   defaultPeriod?: string;
   periods?: AccessPeriod[];
+  historicalEstimates?: AccessHistoricalEstimate[];
 };
 
 const LOCALE_STORAGE_KEY = "inet-ip-info-locale";
@@ -283,6 +298,12 @@ const translations = {
     "access.peakHour": "Peak hour",
     "access.peakDay": "Peak day",
     "access.successRate": "Success rate",
+    "access.logSummary": "Retained access-log aggregate",
+    "access.historicalEstimate": "Historical estimate",
+    "access.estimatedRequests": "Estimated requests",
+    "access.estimatedPeakDay": "Estimated peak day",
+    "access.estimatedRange": "{from} - {to}",
+    "access.estimatedCoverage": "{count} days estimated",
     "access.geoTitle": "Request geography",
     "access.geoText": "GeoIP is aggregated for operations visibility. Raw visitor IP addresses are not published in this page data.",
     "access.mapFallback": "No location data yet",
@@ -433,6 +454,12 @@ const translations = {
     "access.peakHour": "ピーク時間",
     "access.peakDay": "ピーク日",
     "access.successRate": "成功率",
+    "access.logSummary": "保持ログの詳細集計",
+    "access.historicalEstimate": "過去推定",
+    "access.estimatedRequests": "推定リクエスト",
+    "access.estimatedPeakDay": "推定ピーク日",
+    "access.estimatedRange": "{from} - {to}",
+    "access.estimatedCoverage": "{count} 日分の推定",
     "access.geoTitle": "リクエスト元の地域",
     "access.geoText": "GeoIP は運用状況を把握するために集計します。このページ用データには訪問元 IP アドレスの生値を公開しません。",
     "access.mapFallback": "位置情報データはまだありません",
@@ -1619,6 +1646,24 @@ const SAMPLE_ACCESS_INSIGHTS: AccessInsights = {
     SAMPLE_ACCESS_1Y_PERIOD,
     SAMPLE_ACCESS_ALL_PERIOD,
   ],
+  historicalEstimates: [
+    {
+      id: "1y",
+      label: "1y",
+      from: "2025-06-22T00:00:00Z",
+      to: "2026-06-08T00:00:00Z",
+      totalRequests: 6120000,
+      peakDay: "2026-03-09",
+      peakDayRequests: 26840,
+      sampleCount: 351,
+      coverageDays: 351,
+      estimated: true,
+      notes: [
+        "This estimate covers only the period before retained nginx access logs.",
+        "Country, location, ASN, endpoint, status and user-agent breakdowns are not available for this estimated historical segment.",
+      ],
+    },
+  ],
 };
 
 const navItems: Array<{ href: string; labelKey: string; page: PageName }> = [
@@ -2515,6 +2560,7 @@ function renderAccessInsights(): void {
         </div>
       </div>
       <div class="access-summary-grid" id="access-summary"></div>
+      <div class="access-history-panel" id="access-history" hidden></div>
     </section>
     <section class="content-section access-section">
       <div class="section-heading">
@@ -2618,6 +2664,7 @@ function normalizeAccessInsights(data: Partial<AccessInsights>): AccessInsights 
     userAgents: Array.isArray(data.userAgents) ? data.userAgents : [],
     hourlyRequests: Array.isArray(data.hourlyRequests) ? data.hourlyRequests : [],
     notes: Array.isArray(data.notes) ? data.notes : [],
+    historicalEstimates: Array.isArray(data.historicalEstimates) ? data.historicalEstimates : [],
   };
   const rawPeriods = Array.isArray(data.periods) && data.periods.length > 0 ? data.periods : [normalizedRoot];
   const periods = rawPeriods.map((period, index) => normalizeAccessPeriod(period, normalizedRoot, index));
@@ -2728,15 +2775,43 @@ function renderAccessPeriod(data: AccessInsights, periods: AccessPeriod[]): void
   });
 
   requiredElement("#access-summary").innerHTML = renderAccessSummary(period);
+  renderAccessHistory(data, period);
   requiredElement("#access-map").innerHTML = renderAccessMap(period);
   requiredElement("#access-countries").innerHTML = renderAccessBarList(period.topCountries);
-  requiredElement("#access-locations").innerHTML = renderAccessRankGrid(period.topLocations);
+  requiredElement("#access-locations").innerHTML = renderAccessRankGrid(period.topLocations.slice(0, 12));
   requiredElement("#access-trend").innerHTML = renderAccessTrend(period.hourlyRequests, period);
   requiredElement("#access-status").innerHTML = renderAccessStatuses(period.statusCodes);
   requiredElement("#access-endpoints").innerHTML = renderAccessBarList(period.topEndpoints);
   requiredElement("#access-asns").innerHTML = renderAccessBarList(period.topAsns);
   requiredElement("#access-user-agents").innerHTML = renderAccessBarList(period.userAgents);
   requiredElement("#access-notes").innerHTML = period.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("");
+}
+
+function renderAccessHistory(data: AccessInsights, period: AccessPeriod): void {
+  const panel = requiredElement<HTMLDivElement>("#access-history");
+  const estimate = (data.historicalEstimates ?? []).find((item) => item.id === period.id);
+  if (!estimate) {
+    panel.hidden = true;
+    panel.innerHTML = "";
+    return;
+  }
+  panel.hidden = false;
+  const range = tf("access.estimatedRange", {
+    from: formatDate(estimate.from),
+    to: formatDate(estimate.to),
+  });
+  panel.innerHTML = `
+    <div>
+      <span>${escapeHtml(t("access.historicalEstimate"))}</span>
+      <strong>${escapeHtml(t("access.estimatedRequests"))}: ${escapeHtml(formatCount(estimate.totalRequests))}</strong>
+      <small>${escapeHtml(range)}</small>
+    </div>
+    <div>
+      <span>${escapeHtml(t("access.estimatedPeakDay"))}</span>
+      <strong>${escapeHtml(formatDate(estimate.peakDay))}: ${escapeHtml(formatCount(estimate.peakDayRequests))}</strong>
+      <small>${escapeHtml(tf("access.estimatedCoverage", { count: estimate.coverageDays }))}</small>
+    </div>
+  `;
 }
 
 function renderAccessSummary(data: AccessPeriod): string {
@@ -2760,12 +2835,13 @@ function renderAccessSummary(data: AccessPeriod): string {
 }
 
 function renderAccessMap(data: AccessPeriod): string {
-  const maxRequests = Math.max(1, ...data.topLocations.map((item) => item.requests));
-  const markers = data.topLocations
+  const mapLocations = data.topLocations.slice(0, 200);
+  const maxRequests = Math.max(1, ...mapLocations.map((item) => item.requests));
+  const markers = mapLocations
     .map((item) => {
       const x = ((item.longitude + 180) / 360) * 100;
       const y = ((90 - item.latitude) / 180) * 100;
-      const size = 12 + (item.requests / maxRequests) * 24;
+      const size = 7 + (item.requests / maxRequests) * 21;
       return `
         <span
           class="access-map-marker"
@@ -2780,7 +2856,6 @@ function renderAccessMap(data: AccessPeriod): string {
     ${renderWorldMap()}
     ${markers}
     <strong>${escapeHtml(label)}</strong>
-    <small>${escapeHtml(data.source ?? "")}</small>
   `;
 }
 
@@ -2872,6 +2947,16 @@ function formatDateTime(value: string): string {
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+  }).format(date);
+}
+
+function formatDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   }).format(date);
 }
 

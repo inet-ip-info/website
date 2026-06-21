@@ -970,6 +970,44 @@ textarea:focus {
   grid-template-columns: repeat(4, 1fr);
 }
 
+.access-history-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px solid rgba(209, 255, 228, 0.13);
+  border-radius: 8px;
+  background: rgba(209, 255, 228, 0.04);
+}
+
+.access-history-panel[hidden] {
+  display: none;
+}
+
+.access-history-panel div {
+  display: grid;
+  gap: 8px;
+}
+
+.access-history-panel span,
+.access-history-panel small {
+  color: #8ea296;
+}
+
+.access-history-panel span {
+  font-size: 12px;
+  font-weight: 760;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.access-history-panel strong {
+  color: #ffffff;
+  font-size: 22px;
+  line-height: 1.25;
+}
+
 .access-metric,
 .access-panel {
   border: 1px solid rgba(209, 255, 228, 0.13);
@@ -1030,12 +1068,13 @@ textarea:focus {
   position: absolute;
   z-index: 3;
   transform: translate(-50%, -50%);
-  border: 2px solid #06100a;
+  border: 1px solid #06100a;
   border-radius: 50%;
   background: #6effb8;
+  opacity: 0.86;
   box-shadow:
-    0 0 0 8px rgba(110, 255, 184, 0.14),
-    0 0 38px rgba(110, 255, 184, 0.6);
+    0 0 0 4px rgba(110, 255, 184, 0.12),
+    0 0 22px rgba(110, 255, 184, 0.5);
 }
 
 .access-panel {
@@ -1434,6 +1473,10 @@ textarea:focus {
   }
 
   .access-period-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .access-history-panel {
     grid-template-columns: 1fr;
   }
 
