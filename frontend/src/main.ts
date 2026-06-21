@@ -2075,7 +2075,9 @@ function hasUsableLocation(
 
 function renderWorldMap(): string {
   return `
-    <svg class="world-map" viewBox="${escapeHtml(WORLD_MAP_VIEW_BOX)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+    <svg class="world-map" viewBox="${escapeHtml(
+      WORLD_MAP_VIEW_BOX,
+    )}" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
       ${WORLD_MAP_PATHS.map((path) => `<path d="${escapeHtml(path)}"></path>`).join("")}
     </svg>
   `;
@@ -2838,9 +2840,7 @@ function renderAccessSummary(data: AccessPeriod, estimate?: AccessHistoricalEsti
 }
 
 function renderAccessMap(data: AccessPeriod): string {
-  const mapLocations = data.topLocations
-    .filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
-    .slice(0, 200);
+  const mapLocations = data.topLocations.filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude)).slice(0, 200);
   const maxRequests = Math.max(1, ...mapLocations.map((item) => item.requests));
   const coordinateHits = new Map<string, number>();
   const markers = mapLocations
@@ -2861,7 +2861,9 @@ function renderAccessMap(data: AccessPeriod): string {
       return `
         <span
           class="access-map-marker"
-          style="left: calc(${clamp(x, 0, 100)}% + ${jitterX.toFixed(1)}px); top: calc(${clamp(y, 0, 100)}% + ${jitterY.toFixed(1)}px); width: ${size.toFixed(1)}px; height: ${size.toFixed(1)}px; opacity: ${opacity.toFixed(2)}; z-index: ${index + 3}"
+          style="left: calc(${clamp(x, 0, 100)}% + ${jitterX.toFixed(1)}px); top: calc(${clamp(y, 0, 100)}% + ${jitterY.toFixed(
+            1,
+          )}px); width: ${size.toFixed(1)}px; height: ${size.toFixed(1)}px; opacity: ${opacity.toFixed(2)}; z-index: ${index + 3}"
           title="${escapeHtml(`${item.label}: ${formatCount(item.requests)}`)}"
         ></span>
       `;
