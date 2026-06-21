@@ -37,11 +37,7 @@ go run ./cmd/access-insights
 
 nginx access log より古い期間は、Mackerel の `custom.nginx.requests.requests` から一度だけ概算を作成し、詳細 log 集計とは別の `historicalEstimates` として公開 JSON に含めます。
 
-```sh
-go run ./cmd/access-insights-history
-```
-
-このコマンドは Mackerel API を呼び出して `/var/lib/inet-ip-info/access-insights-history.json` を生成します。日次の `cmd/access-insights` は Mackerel API を呼び出さず、このファイルが存在する場合だけ読み込みます。
+日次の `cmd/access-insights` は Mackerel API を呼び出しません。`/var/lib/inet-ip-info/access-insights-history.json` が存在する場合だけ読み込み、公開 JSON に同梱します。
 
 過去推定データで表示するのはリクエスト総数とピーク日だけです。国、地域、ASN、endpoint、status code、user-agent family は access log の詳細集計にだけ含めます。
 
