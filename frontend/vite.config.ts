@@ -20,6 +20,7 @@ export default defineConfig({
         ipcalc: resolve(__dirname, "ipcalc.html"),
         IPv4byCountry: resolve(__dirname, "IPv4byCountry.html"),
         playground: resolve(__dirname, "playground.html"),
+        accessInsights: resolve(__dirname, "access-insights.html"),
       },
     },
   },

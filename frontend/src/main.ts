@@ -1,7 +1,7 @@
 import "./styles.css";
 import { WORLD_MAP_PATHS, WORLD_MAP_VIEW_BOX } from "./world-map";
 
-type PageName = "home" | "ipcalc" | "country" | "playground";
+type PageName = "home" | "ipcalc" | "country" | "playground" | "access";
 type Locale = "en" | "ja" | "zh-Hans" | "ko" | "es" | "fr" | "de" | "pt-BR";
 type LocaleOption = { value: Locale; label: string; htmlLang: string; flag: string };
 
@@ -71,6 +71,68 @@ type CidrResult = {
   last: string;
 };
 
+type AccessSummary = {
+  totalRequests: number;
+  uniqueVisitors: number;
+  peakHourRequests: number;
+  successRate: number;
+};
+
+type AccessCountry = {
+  code: string;
+  name: string;
+  requests: number;
+  share: number;
+};
+
+type AccessLocation = {
+  label: string;
+  countryCode: string;
+  latitude: number;
+  longitude: number;
+  requests: number;
+};
+
+type AccessRanking = {
+  label: string;
+  requests: number;
+  share?: number;
+};
+
+type AccessStatus = {
+  code: string;
+  requests: number;
+};
+
+type AccessHour = {
+  hour: string;
+  requests: number;
+};
+
+type AccessPeriod = {
+  id: string;
+  label: string;
+  description?: string;
+  generatedAt?: string;
+  source?: string;
+  windowHours: number;
+  summary: AccessSummary;
+  topCountries: AccessCountry[];
+  topLocations: AccessLocation[];
+  topAsns: AccessRanking[];
+  topEndpoints: AccessRanking[];
+  statusCodes: AccessStatus[];
+  userAgents: AccessRanking[];
+  hourlyRequests: AccessHour[];
+  notes: string[];
+};
+
+type AccessInsights = AccessPeriod & {
+  sample?: boolean;
+  defaultPeriod?: string;
+  periods?: AccessPeriod[];
+};
+
 const LOCALE_STORAGE_KEY = "inet-ip-info-locale";
 
 const localeOptions: LocaleOption[] = [
@@ -90,6 +152,7 @@ const translations = {
     "meta.ipcalc.title": "IPcalc | inet-ip.info",
     "meta.country.title": "IPv4 by Country | inet-ip.info",
     "meta.playground.title": "CLI Playground | inet-ip.info",
+    "meta.access.title": "Access Insights | inet-ip.info",
     "meta.description": "Fast IPv4 lookup, ASN, GeoIP and curl-ready responses for internet server administrators.",
     "language.label": "Language",
     "brand.subtitle": "public IP tools",
@@ -97,6 +160,7 @@ const translations = {
     "nav.ipcalc": "IPcalc",
     "nav.country": "IPv4 by Country",
     "nav.playground": "CLI Playground",
+    "nav.access": "Access Insights",
     "nav.currentIp": "Your IP",
     "footer.summary": "Fast IPv4 lookup and curl-ready responses for server operators.",
     "home.lead": "Know what the internet sees.",
@@ -129,6 +193,7 @@ const translations = {
     "home.toolIpcalcText": "CIDR, subnet mask and broadcast calculation.",
     "home.toolCountryText": "Country-based CIDR lists for network policy.",
     "home.toolPlaygroundText": "Try command patterns safely in the browser.",
+    "home.toolAccessText": "Aggregated request geography, paths and client trends.",
     "detail.organization": "Organization",
     "detail.continent": "Continent",
     "detail.country": "Country",
@@ -201,12 +266,47 @@ const translations = {
     "playground.awk": "awk columns",
     "playground.jq": "jq format",
     "playground.invalidJson": "Invalid JSON: {message}",
+    "access.description":
+      "A regularly updated, privacy-preserving summary of where requests come from, which paths are used, and whether the service looks healthy.",
+    "access.generated": "Last updated",
+    "access.window": "Window",
+    "access.periods": "Period",
+    "access.periodSummary": "Selected period",
+    "access.periodDescriptionHours": "Last {count} hours from the latest aggregate.",
+    "access.periodDescriptionDays": "Last {count} days from retained access logs.",
+    "access.periodDescriptionMonths": "Last {count} months from available aggregate data.",
+    "access.periodDescriptionYears": "Last {count} years from available aggregate data.",
+    "access.periodDescriptionAll": "All available aggregate data.",
+    "access.periodAll": "all",
+    "access.requests": "Requests",
+    "access.visitors": "Unique visitors",
+    "access.peakHour": "Peak hour",
+    "access.peakDay": "Peak day",
+    "access.successRate": "Success rate",
+    "access.geoTitle": "Request geography",
+    "access.geoText": "GeoIP is aggregated for operations visibility. Raw visitor IP addresses are not published in this page data.",
+    "access.mapFallback": "No location data yet",
+    "access.topCountries": "Top countries",
+    "access.topLocations": "Top locations",
+    "access.trafficTitle": "Traffic shape",
+    "access.trafficText": "Use the trend, endpoint and status breakdowns to spot sudden crawlers, broken links, or routing changes.",
+    "access.hourlyTrend": "Hourly requests",
+    "access.dailyTrend": "Daily requests",
+    "access.topEndpoints": "Top endpoints",
+    "access.statusCodes": "Status codes",
+    "access.clientTitle": "Client signals",
+    "access.clientText": "ASN and user-agent families help distinguish normal operator use, search crawlers and automated scripts.",
+    "access.topAsns": "Top ASNs",
+    "access.userAgents": "User agents",
+    "access.notes": "Notes",
+    "access.sampleNotice": "Showing bundled sample data. Configure the regularly updated access-insights.json to show live traffic.",
   },
   ja: {
     "meta.home.title": "inet-ip.info | サーバー管理者向け IPv4 lookup",
     "meta.ipcalc.title": "IPcalc | inet-ip.info",
     "meta.country.title": "国別 IPv4 | inet-ip.info",
     "meta.playground.title": "CLI Playground | inet-ip.info",
+    "meta.access.title": "Access Insights | inet-ip.info",
     "meta.description": "インターネットサーバー管理者向けの高速な IPv4 lookup、ASN、GeoIP、curl 対応レスポンス。",
     "language.label": "言語",
     "brand.subtitle": "public IP tools",
@@ -214,6 +314,7 @@ const translations = {
     "nav.ipcalc": "IPcalc",
     "nav.country": "国別 IPv4",
     "nav.playground": "CLI Playground",
+    "nav.access": "Access Insights",
     "nav.currentIp": "Your IP",
     "footer.summary": "サーバー管理者向けの高速な IPv4 lookup と curl 対応レスポンス。",
     "home.lead": "インターネットから見える情報を把握する。",
@@ -245,6 +346,7 @@ const translations = {
     "home.toolIpcalcText": "CIDR、サブネットマスク、ブロードキャストを計算します。",
     "home.toolCountryText": "ネットワークポリシー向けの国別 CIDR リスト。",
     "home.toolPlaygroundText": "コマンドパターンをブラウザ上で安全に試せます。",
+    "home.toolAccessText": "リクエスト元の地域、path、client 傾向を集計します。",
     "detail.organization": "組織",
     "detail.continent": "大陸",
     "detail.country": "国",
@@ -314,6 +416,41 @@ const translations = {
     "playground.awk": "awk 列抽出",
     "playground.jq": "jq 整形",
     "playground.invalidJson": "無効な JSON: {message}",
+    "access.description":
+      "定期更新されるプライバシー配慮済みのアクセス集計です。どの地域からのリクエストが多いか、どの path が使われているか、サービス状態に異常がないかを確認できます。",
+    "access.generated": "最終更新",
+    "access.window": "集計範囲",
+    "access.periods": "期間",
+    "access.periodSummary": "選択中の期間",
+    "access.periodDescriptionHours": "直近 {count} 時間の集計です。",
+    "access.periodDescriptionDays": "保持されている access log から直近 {count} 日分を集計します。",
+    "access.periodDescriptionMonths": "利用可能な集計データから直近 {count} ヶ月分を表示します。",
+    "access.periodDescriptionYears": "利用可能な集計データから直近 {count} 年分を表示します。",
+    "access.periodDescriptionAll": "利用可能な全期間の集計です。",
+    "access.periodAll": "全期間",
+    "access.requests": "リクエスト",
+    "access.visitors": "ユニーク訪問元",
+    "access.peakHour": "ピーク時間",
+    "access.peakDay": "ピーク日",
+    "access.successRate": "成功率",
+    "access.geoTitle": "リクエスト元の地域",
+    "access.geoText": "GeoIP は運用状況を把握するために集計します。このページ用データには訪問元 IP アドレスの生値を公開しません。",
+    "access.mapFallback": "位置情報データはまだありません",
+    "access.topCountries": "上位の国",
+    "access.topLocations": "上位の地域",
+    "access.trafficTitle": "トラフィックの形",
+    "access.trafficText": "時間推移、endpoint、status の内訳から crawler の急増、リンク切れ、routing 変更を見つけやすくします。",
+    "access.hourlyTrend": "時間別リクエスト",
+    "access.dailyTrend": "日別リクエスト",
+    "access.topEndpoints": "上位 endpoint",
+    "access.statusCodes": "status code",
+    "access.clientTitle": "client signal",
+    "access.clientText": "ASN と user-agent family から、通常利用、search crawler、自動化 script の偏りを把握します。",
+    "access.topAsns": "上位 ASN",
+    "access.userAgents": "User agent",
+    "access.notes": "メモ",
+    "access.sampleNotice":
+      "同梱サンプルデータを表示しています。定期更新される access-insights.json を設定すると実トラフィックを表示します。",
   },
   "zh-Hans": {
     "meta.home.title": "inet-ip.info | 面向服务器管理员的 IPv4 查询",
@@ -1103,11 +1240,393 @@ const SAMPLE_INFO: IpInfo = {
     'This product includes GeoLite2 data created by MaxMind, available from <a href="https://www.maxmind.com">https://www.maxmind.com</a>.',
 };
 
+const SAMPLE_ACCESS_24H_PERIOD: AccessPeriod = {
+  id: "24h",
+  label: "24h",
+  description: "Last 24 hours, refreshed by the latest periodic aggregate.",
+  windowHours: 24,
+  source: "sample-nginx-access",
+  summary: {
+    totalRequests: 18472,
+    uniqueVisitors: 2638,
+    peakHourRequests: 1420,
+    successRate: 98.7,
+  },
+  topCountries: [
+    { code: "JP", name: "Japan", requests: 8240, share: 44.6 },
+    { code: "US", name: "United States", requests: 3910, share: 21.2 },
+    { code: "DE", name: "Germany", requests: 1448, share: 7.8 },
+    { code: "SG", name: "Singapore", requests: 1124, share: 6.1 },
+    { code: "KR", name: "South Korea", requests: 886, share: 4.8 },
+  ],
+  topLocations: [
+    { label: "Tokyo, JP", countryCode: "JP", latitude: 35.6895, longitude: 139.6917, requests: 4620 },
+    { label: "Osaka, JP", countryCode: "JP", latitude: 34.6937, longitude: 135.5023, requests: 1240 },
+    { label: "Ashburn, US", countryCode: "US", latitude: 39.0437, longitude: -77.4875, requests: 2180 },
+    { label: "Frankfurt, DE", countryCode: "DE", latitude: 50.1109, longitude: 8.6821, requests: 1260 },
+    { label: "Singapore, SG", countryCode: "SG", latitude: 1.3521, longitude: 103.8198, requests: 980 },
+  ],
+  topAsns: [
+    { label: "AS4713 NTT DOCOMO BUSINESS", requests: 3210, share: 17.4 },
+    { label: "AS15169 Google", requests: 2420, share: 13.1 },
+    { label: "AS8075 Microsoft", requests: 1284, share: 7.0 },
+    { label: "AS16509 Amazon", requests: 1166, share: 6.3 },
+  ],
+  topEndpoints: [
+    { label: "/", requests: 5890, share: 31.9 },
+    { label: "/json", requests: 4384, share: 23.7 },
+    { label: "/ip", requests: 2910, share: 15.8 },
+    { label: "/IPv4byCountry", requests: 1268, share: 6.9 },
+    { label: "/access-insights", requests: 830, share: 4.5 },
+  ],
+  statusCodes: [
+    { code: "200", requests: 17624 },
+    { code: "304", requests: 520 },
+    { code: "404", requests: 216 },
+    { code: "400", requests: 112 },
+  ],
+  userAgents: [
+    { label: "Browser", requests: 9210, share: 49.9 },
+    { label: "curl/wget", requests: 4620, share: 25.0 },
+    { label: "Search crawler", requests: 3160, share: 17.1 },
+    { label: "Monitoring", requests: 1482, share: 8.0 },
+  ],
+  hourlyRequests: [
+    { hour: "2026-06-20T04:00:00+09:00", requests: 480 },
+    { hour: "2026-06-20T05:00:00+09:00", requests: 520 },
+    { hour: "2026-06-20T06:00:00+09:00", requests: 610 },
+    { hour: "2026-06-20T07:00:00+09:00", requests: 720 },
+    { hour: "2026-06-20T08:00:00+09:00", requests: 880 },
+    { hour: "2026-06-20T09:00:00+09:00", requests: 1040 },
+    { hour: "2026-06-20T10:00:00+09:00", requests: 1168 },
+    { hour: "2026-06-20T11:00:00+09:00", requests: 1420 },
+    { hour: "2026-06-20T12:00:00+09:00", requests: 1240 },
+    { hour: "2026-06-20T13:00:00+09:00", requests: 1180 },
+    { hour: "2026-06-20T14:00:00+09:00", requests: 980 },
+    { hour: "2026-06-20T15:00:00+09:00", requests: 860 },
+  ],
+  notes: [
+    "Visitor IP addresses are aggregated in memory and are not written to this public JSON.",
+    "Country and ASN coverage depends on the GeoIP endpoint configured for periodic updates.",
+    "Endpoint labels strip query strings before counting to avoid publishing tokens or identifiers.",
+  ],
+};
+
+const SAMPLE_ACCESS_7D_PERIOD: AccessPeriod = {
+  id: "7d",
+  label: "7d",
+  description: "Last 7 days, useful for weekday patterns and crawler spikes.",
+  windowHours: 168,
+  source: "sample-nginx-access",
+  summary: {
+    totalRequests: 126840,
+    uniqueVisitors: 14920,
+    peakHourRequests: 8620,
+    successRate: 98.5,
+  },
+  topCountries: [
+    { code: "JP", name: "Japan", requests: 54820, share: 43.2 },
+    { code: "US", name: "United States", requests: 28490, share: 22.5 },
+    { code: "DE", name: "Germany", requests: 9380, share: 7.4 },
+    { code: "SG", name: "Singapore", requests: 7920, share: 6.2 },
+    { code: "KR", name: "South Korea", requests: 6010, share: 4.7 },
+  ],
+  topLocations: [
+    { label: "Tokyo, JP", countryCode: "JP", latitude: 35.6895, longitude: 139.6917, requests: 31540 },
+    { label: "Ashburn, US", countryCode: "US", latitude: 39.0437, longitude: -77.4875, requests: 16020 },
+    { label: "Osaka, JP", countryCode: "JP", latitude: 34.6937, longitude: 135.5023, requests: 8640 },
+    { label: "Frankfurt, DE", countryCode: "DE", latitude: 50.1109, longitude: 8.6821, requests: 7810 },
+    { label: "Singapore, SG", countryCode: "SG", latitude: 1.3521, longitude: 103.8198, requests: 6990 },
+  ],
+  topAsns: [
+    { label: "AS4713 NTT DOCOMO BUSINESS", requests: 21440, share: 16.9 },
+    { label: "AS15169 Google", requests: 18020, share: 14.2 },
+    { label: "AS8075 Microsoft", requests: 9420, share: 7.4 },
+    { label: "AS16509 Amazon", requests: 8210, share: 6.5 },
+  ],
+  topEndpoints: [
+    { label: "/", requests: 40220, share: 31.7 },
+    { label: "/json", requests: 30440, share: 24.0 },
+    { label: "/ip", requests: 19880, share: 15.7 },
+    { label: "/IPv4byCountry", requests: 9210, share: 7.3 },
+    { label: "/access-insights", requests: 5120, share: 4.0 },
+  ],
+  statusCodes: [
+    { code: "200", requests: 120460 },
+    { code: "304", requests: 3920 },
+    { code: "404", requests: 1690 },
+    { code: "400", requests: 770 },
+  ],
+  userAgents: [
+    { label: "Browser", requests: 62840, share: 49.5 },
+    { label: "curl/wget", requests: 31420, share: 24.8 },
+    { label: "Search crawler", requests: 22140, share: 17.5 },
+    { label: "Monitoring", requests: 10440, share: 8.2 },
+  ],
+  hourlyRequests: [
+    { hour: "2026-06-15T00:00:00+09:00", requests: 16840 },
+    { hour: "2026-06-16T00:00:00+09:00", requests: 17920 },
+    { hour: "2026-06-17T00:00:00+09:00", requests: 18580 },
+    { hour: "2026-06-18T00:00:00+09:00", requests: 17740 },
+    { hour: "2026-06-19T00:00:00+09:00", requests: 18220 },
+    { hour: "2026-06-20T00:00:00+09:00", requests: 19068 },
+    { hour: "2026-06-21T00:00:00+09:00", requests: 18472 },
+  ],
+  notes: [
+    "Visitor IP addresses are aggregated in memory and are not written to this public JSON.",
+    "Seven-day data is generated from daily log windows, then published as aggregate rankings.",
+    "Endpoint labels strip query strings before counting to avoid publishing tokens or identifiers.",
+  ],
+};
+
+const SAMPLE_ACCESS_14D_PERIOD: AccessPeriod = {
+  id: "14d",
+  label: "14d",
+  description: "Last 14 days, matching the current nginx access-log retention window.",
+  windowHours: 336,
+  source: "sample-nginx-access",
+  summary: {
+    totalRequests: 262410,
+    uniqueVisitors: 26780,
+    peakHourRequests: 9360,
+    successRate: 98.4,
+  },
+  topCountries: [
+    { code: "JP", name: "Japan", requests: 111420, share: 42.5 },
+    { code: "US", name: "United States", requests: 60480, share: 23.0 },
+    { code: "DE", name: "Germany", requests: 19120, share: 7.3 },
+    { code: "SG", name: "Singapore", requests: 16260, share: 6.2 },
+    { code: "KR", name: "South Korea", requests: 12240, share: 4.7 },
+  ],
+  topLocations: [
+    { label: "Tokyo, JP", countryCode: "JP", latitude: 35.6895, longitude: 139.6917, requests: 64280 },
+    { label: "Ashburn, US", countryCode: "US", latitude: 39.0437, longitude: -77.4875, requests: 34480 },
+    { label: "Osaka, JP", countryCode: "JP", latitude: 34.6937, longitude: 135.5023, requests: 18420 },
+    { label: "Frankfurt, DE", countryCode: "DE", latitude: 50.1109, longitude: 8.6821, requests: 15920 },
+    { label: "Singapore, SG", countryCode: "SG", latitude: 1.3521, longitude: 103.8198, requests: 14110 },
+  ],
+  topAsns: [
+    { label: "AS4713 NTT DOCOMO BUSINESS", requests: 43820, share: 16.7 },
+    { label: "AS15169 Google", requests: 39160, share: 14.9 },
+    { label: "AS8075 Microsoft", requests: 19140, share: 7.3 },
+    { label: "AS16509 Amazon", requests: 17220, share: 6.6 },
+  ],
+  topEndpoints: [
+    { label: "/", requests: 83240, share: 31.7 },
+    { label: "/json", requests: 62410, share: 23.8 },
+    { label: "/ip", requests: 41780, share: 15.9 },
+    { label: "/IPv4byCountry", requests: 18260, share: 7.0 },
+    { label: "/access-insights", requests: 9980, share: 3.8 },
+  ],
+  statusCodes: [
+    { code: "200", requests: 248940 },
+    { code: "304", requests: 7960 },
+    { code: "404", requests: 3740 },
+    { code: "400", requests: 1770 },
+  ],
+  userAgents: [
+    { label: "Browser", requests: 130920, share: 49.9 },
+    { label: "curl/wget", requests: 64280, share: 24.5 },
+    { label: "Search crawler", requests: 45520, share: 17.3 },
+    { label: "Monitoring", requests: 21690, share: 8.3 },
+  ],
+  hourlyRequests: [
+    { hour: "2026-06-08T00:00:00+09:00", requests: 17820 },
+    { hour: "2026-06-09T00:00:00+09:00", requests: 18440 },
+    { hour: "2026-06-10T00:00:00+09:00", requests: 19020 },
+    { hour: "2026-06-11T00:00:00+09:00", requests: 20110 },
+    { hour: "2026-06-12T00:00:00+09:00", requests: 17880 },
+    { hour: "2026-06-13T00:00:00+09:00", requests: 17140 },
+    { hour: "2026-06-14T00:00:00+09:00", requests: 18160 },
+    { hour: "2026-06-15T00:00:00+09:00", requests: 16840 },
+    { hour: "2026-06-16T00:00:00+09:00", requests: 17920 },
+    { hour: "2026-06-17T00:00:00+09:00", requests: 18580 },
+    { hour: "2026-06-18T00:00:00+09:00", requests: 17740 },
+    { hour: "2026-06-19T00:00:00+09:00", requests: 18220 },
+    { hour: "2026-06-20T00:00:00+09:00", requests: 19068 },
+    { hour: "2026-06-21T00:00:00+09:00", requests: 18472 },
+  ],
+  notes: [
+    "Visitor IP addresses are aggregated in memory and are not written to this public JSON.",
+    "Fourteen-day data follows the current nginx access-log retention window.",
+    "Endpoint labels strip query strings before counting to avoid publishing tokens or identifiers.",
+  ],
+};
+
+function scaleSampleAccessPeriod(
+  base: AccessPeriod,
+  options: {
+    id: string;
+    label: string;
+    windowHours: number;
+    totalRequests: number;
+    uniqueVisitors: number;
+    peakHourRequests: number;
+    successRate: number;
+    trendStart: string;
+    trendDays: number;
+    notes: string[];
+  },
+): AccessPeriod {
+  const factor = options.totalRequests / Math.max(1, base.summary.totalRequests);
+  return {
+    ...base,
+    id: options.id,
+    label: options.label,
+    description: "",
+    windowHours: options.windowHours,
+    summary: {
+      totalRequests: options.totalRequests,
+      uniqueVisitors: options.uniqueVisitors,
+      peakHourRequests: options.peakHourRequests,
+      successRate: options.successRate,
+    },
+    topCountries: scaleSampleRequests(base.topCountries, factor),
+    topLocations: scaleSampleRequests(base.topLocations, factor),
+    topAsns: scaleSampleRequests(base.topAsns, factor),
+    topEndpoints: scaleSampleRequests(base.topEndpoints, factor),
+    statusCodes: scaleSampleRequests(base.statusCodes, factor),
+    userAgents: scaleSampleRequests(base.userAgents, factor),
+    hourlyRequests: createSampleDailyTrend(options.trendStart, options.trendDays, options.totalRequests),
+    notes: options.notes,
+  };
+}
+
+function scaleSampleRequests<T extends { requests: number }>(items: T[], factor: number): T[] {
+  return items.map((item) => ({ ...item, requests: Math.max(1, Math.round(item.requests * factor)) }));
+}
+
+function createSampleDailyTrend(startDate: string, days: number, totalRequests: number): AccessHour[] {
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const average = totalRequests / Math.max(1, days);
+  return Array.from({ length: days }, (_, index) => {
+    const date = new Date(start);
+    date.setUTCDate(start.getUTCDate() + index);
+    const weekly = index % 7 === 5 || index % 7 === 6 ? 0.92 : 1.04;
+    const seasonal = 1 + Math.sin(index * 0.73) * 0.08 + Math.cos(index * 0.19) * 0.05;
+    return {
+      hour: `${formatSampleDate(date)}T00:00:00+09:00`,
+      requests: Math.max(1, Math.round(average * weekly * seasonal)),
+    };
+  });
+}
+
+function formatSampleDate(date: Date): string {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+const SAMPLE_ACCESS_1M_PERIOD = scaleSampleAccessPeriod(SAMPLE_ACCESS_14D_PERIOD, {
+  id: "1m",
+  label: "1m",
+  windowHours: 30 * 24,
+  totalRequests: 558900,
+  uniqueVisitors: 49800,
+  peakHourRequests: 21420,
+  successRate: 98.3,
+  trendStart: "2026-05-23",
+  trendDays: 30,
+  notes: [
+    "Visitor IP addresses are aggregated in memory and are not written to this public JSON.",
+    "Longer windows are intended to be generated from retained aggregate history once it is available.",
+    "Endpoint labels strip query strings before counting to avoid publishing tokens or identifiers.",
+  ],
+});
+
+const SAMPLE_ACCESS_3M_PERIOD = scaleSampleAccessPeriod(SAMPLE_ACCESS_14D_PERIOD, {
+  id: "3m",
+  label: "3m",
+  windowHours: 90 * 24,
+  totalRequests: 1642300,
+  uniqueVisitors: 146200,
+  peakHourRequests: 23840,
+  successRate: 98.2,
+  trendStart: "2026-03-24",
+  trendDays: 90,
+  notes: [
+    "Visitor IP addresses are aggregated in memory and are not written to this public JSON.",
+    "Three-month data is most useful after daily aggregate history has accumulated.",
+    "Endpoint labels strip query strings before counting to avoid publishing tokens or identifiers.",
+  ],
+});
+
+const SAMPLE_ACCESS_6M_PERIOD = scaleSampleAccessPeriod(SAMPLE_ACCESS_14D_PERIOD, {
+  id: "6m",
+  label: "6m",
+  windowHours: 180 * 24,
+  totalRequests: 3186700,
+  uniqueVisitors: 274500,
+  peakHourRequests: 25180,
+  successRate: 98.2,
+  trendStart: "2025-12-24",
+  trendDays: 180,
+  notes: [
+    "Visitor IP addresses are aggregated in memory and are not written to this public JSON.",
+    "Six-month data is intended for seasonal traffic and crawler trend review.",
+    "Endpoint labels strip query strings before counting to avoid publishing tokens or identifiers.",
+  ],
+});
+
+const SAMPLE_ACCESS_1Y_PERIOD = scaleSampleAccessPeriod(SAMPLE_ACCESS_14D_PERIOD, {
+  id: "1y",
+  label: "1y",
+  windowHours: 365 * 24,
+  totalRequests: 6420900,
+  uniqueVisitors: 522800,
+  peakHourRequests: 26840,
+  successRate: 98.1,
+  trendStart: "2025-06-22",
+  trendDays: 365,
+  notes: [
+    "Visitor IP addresses are aggregated in memory and are not written to this public JSON.",
+    "One-year data is intended for long-running operations review after aggregate history has accumulated.",
+    "Endpoint labels strip query strings before counting to avoid publishing tokens or identifiers.",
+  ],
+});
+
+const SAMPLE_ACCESS_ALL_PERIOD = scaleSampleAccessPeriod(SAMPLE_ACCESS_14D_PERIOD, {
+  id: "all",
+  label: "all",
+  windowHours: 365 * 24 * 100,
+  totalRequests: 9884200,
+  uniqueVisitors: 731400,
+  peakHourRequests: 29110,
+  successRate: 98.0,
+  trendStart: "2025-04-28",
+  trendDays: 420,
+  notes: [
+    "Visitor IP addresses are aggregated in memory and are not written to this public JSON.",
+    "The all period covers every day available in the aggregate history used to publish this JSON.",
+    "Endpoint labels strip query strings before counting to avoid publishing tokens or identifiers.",
+  ],
+});
+
+const SAMPLE_ACCESS_INSIGHTS: AccessInsights = {
+  ...SAMPLE_ACCESS_ALL_PERIOD,
+  sample: true,
+  generatedAt: "2026-06-21T03:00:00+09:00",
+  source: "sample-nginx-access",
+  defaultPeriod: "all",
+  periods: [
+    SAMPLE_ACCESS_24H_PERIOD,
+    SAMPLE_ACCESS_7D_PERIOD,
+    SAMPLE_ACCESS_14D_PERIOD,
+    SAMPLE_ACCESS_1M_PERIOD,
+    SAMPLE_ACCESS_3M_PERIOD,
+    SAMPLE_ACCESS_6M_PERIOD,
+    SAMPLE_ACCESS_1Y_PERIOD,
+    SAMPLE_ACCESS_ALL_PERIOD,
+  ],
+};
+
 const navItems: Array<{ href: string; labelKey: string; page: PageName }> = [
   { href: "/", labelKey: "nav.home", page: "home" },
   { href: "/ipcalc", labelKey: "nav.ipcalc", page: "ipcalc" },
   { href: "/IPv4byCountry", labelKey: "nav.country", page: "country" },
   { href: "/playground", labelKey: "nav.playground", page: "playground" },
+  { href: "/access-insights", labelKey: "nav.access", page: "access" },
 ];
 
 const appRoot = document.querySelector<HTMLDivElement>("#app");
@@ -1123,6 +1642,7 @@ const homeViewState: HomeViewState = {
   resolvedTarget: "",
   info: null,
 };
+let activeAccessPeriodId = "";
 
 function markAppReady(): void {
   if (document.documentElement.classList.contains("app-ready")) return;
@@ -1570,6 +2090,9 @@ function renderHome(): void {
         <a href="/playground"><span>03</span><strong>${escapeHtml(t("nav.playground"))}</strong><small>${escapeHtml(
           t("home.toolPlaygroundText"),
         )}</small></a>
+        <a href="/access-insights"><span>04</span><strong>${escapeHtml(t("nav.access"))}</strong><small>${escapeHtml(
+          t("home.toolAccessText"),
+        )}</small></a>
       </div>
     </section>
   `);
@@ -1971,6 +2494,400 @@ function createCodeBlock(title: string, code: string): HTMLElement {
   return article;
 }
 
+function renderAccessInsights(): void {
+  renderShell(`
+    <section class="page-hero access-page-hero">
+      <h1>${escapeHtml(t("nav.access"))}</h1>
+      <p>${escapeHtml(t("access.description"))}</p>
+      <div class="access-meta" aria-label="access insights freshness">
+        <span>${escapeHtml(t("access.generated"))}: <strong id="access-generated">-</strong></span>
+        <span>${escapeHtml(t("access.window"))}: <strong id="access-window">-</strong></span>
+      </div>
+    </section>
+    <section class="content-section compact-section access-dashboard">
+      <p class="validation access-sample-notice" id="access-sample-notice" hidden>${escapeHtml(t("access.sampleNotice"))}</p>
+      <div class="access-period-shell">
+        <div class="tabs access-period-tabs" id="access-period-tabs" role="tablist" aria-label="${escapeHtml(t("access.periods"))}"></div>
+        <div class="access-period-context">
+          <span>${escapeHtml(t("access.periodSummary"))}</span>
+          <strong id="access-period-title">-</strong>
+          <p id="access-period-description"></p>
+        </div>
+      </div>
+      <div class="access-summary-grid" id="access-summary"></div>
+    </section>
+    <section class="content-section access-section">
+      <div class="section-heading">
+        <h2>${escapeHtml(t("access.geoTitle"))}</h2>
+        <p>${escapeHtml(t("access.geoText"))}</p>
+      </div>
+      <div class="access-geo-grid">
+        <div class="location-map access-map" id="access-map" aria-label="${escapeHtml(t("access.geoTitle"))}"></div>
+        <div class="access-panel">
+          <h3>${escapeHtml(t("access.topCountries"))}</h3>
+          <div class="access-bar-list" id="access-countries"></div>
+        </div>
+      </div>
+      <div class="access-panel access-wide-panel">
+        <h3>${escapeHtml(t("access.topLocations"))}</h3>
+        <div class="access-rank-grid" id="access-locations"></div>
+      </div>
+    </section>
+    <section class="content-section access-section">
+      <div class="section-heading">
+        <h2>${escapeHtml(t("access.trafficTitle"))}</h2>
+        <p>${escapeHtml(t("access.trafficText"))}</p>
+      </div>
+      <div class="access-traffic-grid">
+        <div class="access-panel access-trend-panel">
+          <h3 id="access-trend-title">${escapeHtml(t("access.hourlyTrend"))}</h3>
+          <div class="access-trend" id="access-trend"></div>
+        </div>
+        <div class="access-panel">
+          <h3>${escapeHtml(t("access.statusCodes"))}</h3>
+          <div class="access-status-list" id="access-status"></div>
+        </div>
+      </div>
+      <div class="access-panel access-wide-panel">
+        <h3>${escapeHtml(t("access.topEndpoints"))}</h3>
+        <div class="access-bar-list" id="access-endpoints"></div>
+      </div>
+    </section>
+    <section class="content-section access-section">
+      <div class="section-heading">
+        <h2>${escapeHtml(t("access.clientTitle"))}</h2>
+        <p>${escapeHtml(t("access.clientText"))}</p>
+      </div>
+      <div class="access-client-grid">
+        <div class="access-panel">
+          <h3>${escapeHtml(t("access.topAsns"))}</h3>
+          <div class="access-bar-list" id="access-asns"></div>
+        </div>
+        <div class="access-panel">
+          <h3>${escapeHtml(t("access.userAgents"))}</h3>
+          <div class="access-bar-list" id="access-user-agents"></div>
+        </div>
+      </div>
+      <div class="access-panel access-notes-panel">
+        <h3>${escapeHtml(t("access.notes"))}</h3>
+        <ul id="access-notes"></ul>
+      </div>
+    </section>
+  `);
+  void initAccessInsights();
+}
+
+async function initAccessInsights(): Promise<void> {
+  const readyFallback = window.setTimeout(markAppReady, 1200);
+  const result = await fetchAccessInsights();
+  window.clearTimeout(readyFallback);
+  renderAccessData(result.data, result.fromSample);
+  markAppReady();
+}
+
+async function fetchAccessInsights(): Promise<{ data: AccessInsights; fromSample: boolean }> {
+  try {
+    const response = await fetch("/access-insights.json", {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = normalizeAccessInsights((await response.json()) as Partial<AccessInsights>);
+    return { data, fromSample: data.sample === true };
+  } catch {
+    return { data: SAMPLE_ACCESS_INSIGHTS, fromSample: true };
+  }
+}
+
+function normalizeAccessInsights(data: Partial<AccessInsights>): AccessInsights {
+  const normalizedRoot: AccessInsights = {
+    ...SAMPLE_ACCESS_INSIGHTS,
+    ...data,
+    id: data.id ?? SAMPLE_ACCESS_INSIGHTS.id,
+    label: data.label ?? SAMPLE_ACCESS_INSIGHTS.label,
+    description: data.description ?? SAMPLE_ACCESS_INSIGHTS.description,
+    generatedAt: data.generatedAt ?? SAMPLE_ACCESS_INSIGHTS.generatedAt,
+    source: data.source ?? SAMPLE_ACCESS_INSIGHTS.source,
+    windowHours: data.windowHours ?? SAMPLE_ACCESS_INSIGHTS.windowHours,
+    summary: { ...SAMPLE_ACCESS_INSIGHTS.summary, ...(data.summary ?? {}) },
+    topCountries: Array.isArray(data.topCountries) ? data.topCountries : [],
+    topLocations: Array.isArray(data.topLocations) ? data.topLocations : [],
+    topAsns: Array.isArray(data.topAsns) ? data.topAsns : [],
+    topEndpoints: Array.isArray(data.topEndpoints) ? data.topEndpoints : [],
+    statusCodes: Array.isArray(data.statusCodes) ? data.statusCodes : [],
+    userAgents: Array.isArray(data.userAgents) ? data.userAgents : [],
+    hourlyRequests: Array.isArray(data.hourlyRequests) ? data.hourlyRequests : [],
+    notes: Array.isArray(data.notes) ? data.notes : [],
+  };
+  const rawPeriods = Array.isArray(data.periods) && data.periods.length > 0 ? data.periods : [normalizedRoot];
+  const periods = rawPeriods.map((period, index) => normalizeAccessPeriod(period, normalizedRoot, index));
+  const defaultPeriod = periods.some((period) => period.id === data.defaultPeriod) ? data.defaultPeriod : periods[0]?.id;
+  return { ...normalizedRoot, defaultPeriod, periods };
+}
+
+function normalizeAccessPeriod(period: Partial<AccessPeriod>, fallback: AccessInsights, index: number): AccessPeriod {
+  const windowHours = period.windowHours ?? fallback.windowHours ?? 24;
+  return {
+    id: period.id ?? (index === 0 ? fallback.id : `${windowHours}h`),
+    label: period.label ?? formatWindowLabel(windowHours),
+    description: period.description ?? fallback.description ?? "",
+    generatedAt: period.generatedAt ?? fallback.generatedAt,
+    source: period.source ?? fallback.source,
+    windowHours,
+    summary: { ...fallback.summary, ...(period.summary ?? {}) },
+    topCountries: Array.isArray(period.topCountries) ? period.topCountries : [],
+    topLocations: Array.isArray(period.topLocations) ? period.topLocations : [],
+    topAsns: Array.isArray(period.topAsns) ? period.topAsns : [],
+    topEndpoints: Array.isArray(period.topEndpoints) ? period.topEndpoints : [],
+    statusCodes: Array.isArray(period.statusCodes) ? period.statusCodes : [],
+    userAgents: Array.isArray(period.userAgents) ? period.userAgents : [],
+    hourlyRequests: Array.isArray(period.hourlyRequests) ? period.hourlyRequests : [],
+    notes: Array.isArray(period.notes) ? period.notes : [],
+  };
+}
+
+function formatWindowLabel(windowHours: number): string {
+  if (windowHours === 30 * 24) return "1m";
+  if (windowHours === 90 * 24) return "3m";
+  if (windowHours === 180 * 24) return "6m";
+  if (windowHours === 365 * 24) return "1y";
+  if (windowHours > 0 && windowHours % 24 === 0) {
+    const days = windowHours / 24;
+    return days === 1 ? "24h" : `${days}d`;
+  }
+  return `${windowHours}h`;
+}
+
+function formatAccessPeriodLabel(period: AccessPeriod): string {
+  if (period.id === "all") return t("access.periodAll");
+  const monthMatch = /^(\d+)m$/.exec(period.id);
+  if (monthMatch) return locale === "ja" ? `${monthMatch[1]}ヶ月` : period.label;
+  const yearMatch = /^(\d+)y$/.exec(period.id);
+  if (yearMatch) return locale === "ja" ? `${yearMatch[1]}年` : period.label;
+  return period.label || formatWindowLabel(period.windowHours);
+}
+
+function formatAccessPeriodDescription(period: AccessPeriod): string {
+  if (period.id === "all") return t("access.periodDescriptionAll");
+  const monthMatch = /^(\d+)m$/.exec(period.id);
+  if (monthMatch) return tf("access.periodDescriptionMonths", { count: monthMatch[1] });
+  const yearMatch = /^(\d+)y$/.exec(period.id);
+  if (yearMatch) return tf("access.periodDescriptionYears", { count: yearMatch[1] });
+  if (Number.isFinite(period.windowHours) && period.windowHours > 0) {
+    if (period.windowHours > 24 && period.windowHours % 24 === 0) {
+      return tf("access.periodDescriptionDays", { count: period.windowHours / 24 });
+    }
+    return tf("access.periodDescriptionHours", { count: period.windowHours });
+  }
+  return period.description ?? "";
+}
+
+function isDailyAccessPeriod(period: AccessPeriod): boolean {
+  return period.id === "all" || period.windowHours > 48;
+}
+
+function renderAccessData(data: AccessInsights, fromSample: boolean): void {
+  const periods = data.periods && data.periods.length > 0 ? data.periods : [normalizeAccessPeriod(data, data, 0)];
+  if (!activeAccessPeriodId || !periods.some((period) => period.id === activeAccessPeriodId)) {
+    activeAccessPeriodId = data.defaultPeriod ?? periods[0].id;
+  }
+  const sampleNotice = requiredElement<HTMLParagraphElement>("#access-sample-notice");
+  sampleNotice.hidden = !fromSample;
+  const tabs = requiredElement<HTMLDivElement>("#access-period-tabs");
+  tabs.innerHTML = periods
+    .map(
+      (period) => `
+        <button type="button" role="tab" data-access-period="${escapeHtml(period.id)}">
+          ${escapeHtml(formatAccessPeriodLabel(period))}
+        </button>
+      `,
+    )
+    .join("");
+  tabs.querySelectorAll<HTMLButtonElement>("[data-access-period]").forEach((button) => {
+    button.addEventListener("click", () => {
+      activeAccessPeriodId = button.dataset.accessPeriod ?? activeAccessPeriodId;
+      renderAccessPeriod(data, periods);
+    });
+  });
+  renderAccessPeriod(data, periods);
+}
+
+function renderAccessPeriod(data: AccessInsights, periods: AccessPeriod[]): void {
+  const period = periods.find((item) => item.id === activeAccessPeriodId) ?? periods[0];
+  const periodLabel = formatAccessPeriodLabel(period);
+  activeAccessPeriodId = period.id;
+  requiredElement("#access-generated").textContent = formatDateTime(period.generatedAt ?? data.generatedAt ?? "");
+  requiredElement("#access-window").textContent = periodLabel;
+  requiredElement("#access-period-title").textContent = periodLabel;
+  requiredElement("#access-period-description").textContent = formatAccessPeriodDescription(period);
+  requiredElement("#access-trend-title").textContent = isDailyAccessPeriod(period) ? t("access.dailyTrend") : t("access.hourlyTrend");
+  document.querySelectorAll<HTMLButtonElement>("[data-access-period]").forEach((button) => {
+    const active = button.dataset.accessPeriod === period.id;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+
+  requiredElement("#access-summary").innerHTML = renderAccessSummary(period);
+  requiredElement("#access-map").innerHTML = renderAccessMap(period);
+  requiredElement("#access-countries").innerHTML = renderAccessBarList(period.topCountries);
+  requiredElement("#access-locations").innerHTML = renderAccessRankGrid(period.topLocations);
+  requiredElement("#access-trend").innerHTML = renderAccessTrend(period.hourlyRequests, period);
+  requiredElement("#access-status").innerHTML = renderAccessStatuses(period.statusCodes);
+  requiredElement("#access-endpoints").innerHTML = renderAccessBarList(period.topEndpoints);
+  requiredElement("#access-asns").innerHTML = renderAccessBarList(period.topAsns);
+  requiredElement("#access-user-agents").innerHTML = renderAccessBarList(period.userAgents);
+  requiredElement("#access-notes").innerHTML = period.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("");
+}
+
+function renderAccessSummary(data: AccessPeriod): string {
+  const peakLabel = isDailyAccessPeriod(data) ? t("access.peakDay") : t("access.peakHour");
+  const metrics = [
+    { label: t("access.requests"), value: formatCount(data.summary.totalRequests), tone: "strong" },
+    { label: t("access.visitors"), value: formatCount(data.summary.uniqueVisitors), tone: "" },
+    { label: peakLabel, value: formatCount(data.summary.peakHourRequests), tone: "" },
+    { label: t("access.successRate"), value: formatPercent(data.summary.successRate), tone: "good" },
+  ];
+  return metrics
+    .map(
+      (metric) => `
+        <article class="access-metric ${metric.tone}">
+          <span>${escapeHtml(metric.label)}</span>
+          <strong>${escapeHtml(metric.value)}</strong>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function renderAccessMap(data: AccessPeriod): string {
+  const maxRequests = Math.max(1, ...data.topLocations.map((item) => item.requests));
+  const markers = data.topLocations
+    .map((item) => {
+      const x = ((item.longitude + 180) / 360) * 100;
+      const y = ((90 - item.latitude) / 180) * 100;
+      const size = 12 + (item.requests / maxRequests) * 24;
+      return `
+        <span
+          class="access-map-marker"
+          style="left: ${clamp(x, 0, 100)}%; top: ${clamp(y, 0, 100)}%; width: ${size}px; height: ${size}px"
+          title="${escapeHtml(`${item.label}: ${formatCount(item.requests)}`)}"
+        ></span>
+      `;
+    })
+    .join("");
+  const label = data.topLocations[0]?.label ?? t("access.mapFallback");
+  return `
+    ${renderWorldMap()}
+    ${markers}
+    <strong>${escapeHtml(label)}</strong>
+    <small>${escapeHtml(data.source ?? "")}</small>
+  `;
+}
+
+function renderAccessBarList(items: Array<AccessCountry | AccessRanking>): string {
+  if (items.length === 0) return `<p class="access-empty">${escapeHtml(t("message.unknown"))}</p>`;
+  const maxRequests = Math.max(1, ...items.map((item) => item.requests));
+  return items
+    .map((item) => {
+      const label = "name" in item ? `${item.name} / ${item.code}` : item.label;
+      const share = item.share === undefined ? "" : `<em>${escapeHtml(formatPercent(item.share))}</em>`;
+      return `
+        <div class="access-bar-row">
+          <div>
+            <span>${escapeHtml(label)}</span>
+            <strong>${escapeHtml(formatCount(item.requests))}</strong>
+            ${share}
+          </div>
+          <span class="access-bar-track" aria-hidden="true"><span style="width: ${(item.requests / maxRequests) * 100}%"></span></span>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderAccessRankGrid(items: AccessLocation[]): string {
+  if (items.length === 0) return `<p class="access-empty">${escapeHtml(t("message.unknown"))}</p>`;
+  return items
+    .map(
+      (item, index) => `
+        <article>
+          <span>${String(index + 1).padStart(2, "0")}</span>
+          <strong>${escapeHtml(item.label)}</strong>
+          <small>${escapeHtml(item.countryCode)} · ${escapeHtml(formatCount(item.requests))}</small>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function renderAccessTrend(points: AccessHour[], period: AccessPeriod): string {
+  if (points.length === 0) return `<p class="access-empty">${escapeHtml(t("message.unknown"))}</p>`;
+  const maxRequests = Math.max(1, ...points.map((point) => point.requests));
+  const labelStep = points.length > 18 ? Math.ceil(points.length / 8) : 1;
+  const densityClass = points.length > 120 ? "dense" : points.length > 45 ? "compact" : "";
+  return points
+    .map((point, index) => {
+      const tick = formatTrendTick(point.hour, period);
+      const label = index % labelStep === 0 || index === points.length - 1 ? `<small>${escapeHtml(tick)}</small>` : "";
+      return `
+        <span
+          class="${densityClass}"
+          style="height: ${Math.max(6, (point.requests / maxRequests) * 100)}%"
+          title="${escapeHtml(`${tick}: ${formatCount(point.requests)}`)}"
+        >
+          ${label}
+        </span>
+      `;
+    })
+    .join("");
+}
+
+function renderAccessStatuses(items: AccessStatus[]): string {
+  if (items.length === 0) return `<p class="access-empty">${escapeHtml(t("message.unknown"))}</p>`;
+  return items
+    .map(
+      (item) => `
+        <span class="access-status status-${escapeHtml(item.code.slice(0, 1))}xx">
+          ${escapeHtml(item.code)}
+          <strong>${escapeHtml(formatCount(item.requests))}</strong>
+        </span>
+      `,
+    )
+    .join("");
+}
+
+function formatCount(value: number): string {
+  return new Intl.NumberFormat(locale).format(value);
+}
+
+function formatPercent(value: number): string {
+  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value)}%`;
+}
+
+function formatDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(locale, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatHour(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.slice(0, 5);
+  return new Intl.DateTimeFormat(locale, { hour: "2-digit" }).format(date);
+}
+
+function formatTrendTick(value: string, period: AccessPeriod): string {
+  if (!isDailyAccessPeriod(period)) return formatHour(value);
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.slice(5, 10);
+  return new Intl.DateTimeFormat(locale, { month: "numeric", day: "numeric" }).format(date);
+}
+
 function renderPlayground(): void {
   renderShell(`
     <section class="page-hero narrow">
@@ -2072,6 +2989,10 @@ function renderPage(): void {
   if (page === "ipcalc") renderIpcalc();
   if (page === "country") renderCountry();
   if (page === "playground") renderPlayground();
+  if (page === "access") {
+    renderAccessInsights();
+    return;
+  }
   markAppReady();
 }
 
