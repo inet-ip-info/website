@@ -1,7 +1,9 @@
 import "./styles.css";
+import { WORLD_MAP_PATHS, WORLD_MAP_VIEW_BOX } from "./world-map";
 
 type PageName = "home" | "ipcalc" | "country" | "playground";
 type Locale = "en" | "ja" | "zh-Hans" | "ko" | "es" | "fr" | "de" | "pt-BR";
+type LocaleOption = { value: Locale; label: string; htmlLang: string; flag: string };
 
 type NameMap = Record<string, string> | null;
 
@@ -53,15 +55,15 @@ type CidrResult = {
 
 const LOCALE_STORAGE_KEY = "inet-ip-info-locale";
 
-const localeOptions: Array<{ value: Locale; label: string; htmlLang: string }> = [
-  { value: "en", label: "English", htmlLang: "en" },
-  { value: "ja", label: "日本語", htmlLang: "ja" },
-  { value: "zh-Hans", label: "简体中文", htmlLang: "zh-Hans" },
-  { value: "ko", label: "한국어", htmlLang: "ko" },
-  { value: "es", label: "Español", htmlLang: "es" },
-  { value: "fr", label: "Français", htmlLang: "fr" },
-  { value: "de", label: "Deutsch", htmlLang: "de" },
-  { value: "pt-BR", label: "Português", htmlLang: "pt-BR" },
+const localeOptions: LocaleOption[] = [
+  { value: "en", label: "English", htmlLang: "en", flag: "🇺🇸" },
+  { value: "ja", label: "日本語", htmlLang: "ja", flag: "🇯🇵" },
+  { value: "zh-Hans", label: "简体中文", htmlLang: "zh-Hans", flag: "🇨🇳" },
+  { value: "ko", label: "한국어", htmlLang: "ko", flag: "🇰🇷" },
+  { value: "es", label: "Español", htmlLang: "es", flag: "🇪🇸" },
+  { value: "fr", label: "Français", htmlLang: "fr", flag: "🇫🇷" },
+  { value: "de", label: "Deutsch", htmlLang: "de", flag: "🇩🇪" },
+  { value: "pt-BR", label: "Português", htmlLang: "pt-BR", flag: "🇧🇷" },
 ];
 
 const translations = {
@@ -99,8 +101,9 @@ const translations = {
     "home.signalCountry": "Country lookup",
     "home.signalLocation": "Location detail",
     "home.signalCurl": "curl-ready",
-    "home.readableTitle": "Readable network detail",
-    "home.readableText": "Keep the fields operators need most visible, without making the lookup result feel like a raw dump.",
+    "home.readableTitle": "GeoIP context for policy decisions",
+    "home.readableText":
+      "Use location data as an operations hint for firewall policy, traffic review, and incident notes; it is not host-level positioning.",
     "home.cliTitle": "curl-ready endpoints",
     "home.cliText": "Use the same service from shell scripts, provisioning jobs, monitoring checks or incident notes.",
     "home.moreToolsTitle": "More operator tools",
@@ -124,6 +127,9 @@ const translations = {
     "detail.latitude": "Latitude",
     "detail.longitude": "Longitude",
     "detail.metroCode": "Metro code",
+    "geoip.source": "Data source",
+    "geoip.operatorUse": "Operational use",
+    "geoip.operatorUseValue": "Policy hint, allowlist review, incident context",
     "message.lookupFailed": "Lookup failed. Please retry or check the API response.",
     "message.invalidIpv4": "Valid IPv4 address is required.",
     "message.unknown": "Unknown",
@@ -206,8 +212,8 @@ const translations = {
     "home.signalCountry": "国 lookup",
     "home.signalLocation": "位置情報",
     "home.signalCurl": "curl 対応",
-    "home.readableTitle": "読みやすいネットワーク情報",
-    "home.readableText": "管理者がよく見る項目を見やすく保ち、lookup 結果を生の dump に見せません。",
+    "home.readableTitle": "GeoIP を運用判断に使う",
+    "home.readableText": "GeoIP は firewall policy、allowlist、インシデント調査の補助情報として扱い、端末の正確な位置としては扱いません。",
     "home.cliTitle": "curl 対応エンドポイント",
     "home.cliText": "シェルスクリプト、プロビジョニング、監視、インシデントメモから同じサービスを利用できます。",
     "home.moreToolsTitle": "管理者向けツール",
@@ -231,6 +237,9 @@ const translations = {
     "detail.latitude": "緯度",
     "detail.longitude": "経度",
     "detail.metroCode": "Metro code",
+    "geoip.source": "データソース",
+    "geoip.operatorUse": "運用での使い方",
+    "geoip.operatorUseValue": "ポリシー判断、allowlist 確認、インシデント文脈の補助",
     "message.lookupFailed": "lookup に失敗しました。再試行するか API レスポンスを確認してください。",
     "message.invalidIpv4": "有効な IPv4 アドレスを入力してください。",
     "message.unknown": "不明",
@@ -310,8 +319,8 @@ const translations = {
     "home.signalCountry": "国家查询",
     "home.signalLocation": "位置详情",
     "home.signalCurl": "curl 友好",
-    "home.readableTitle": "清晰的网络详情",
-    "home.readableText": "突出管理员最常用字段，避免让查询结果看起来像原始 dump。",
+    "home.readableTitle": "用于策略判断的 GeoIP 上下文",
+    "home.readableText": "将位置数据作为防火墙策略、流量复核和故障记录的运维提示，而不是主机级精确定位。",
     "home.cliTitle": "curl 友好端点",
     "home.cliText": "可在 shell 脚本、配置任务、监控检查或故障记录中使用同一服务。",
     "home.moreToolsTitle": "更多运维工具",
@@ -335,6 +344,9 @@ const translations = {
     "detail.latitude": "纬度",
     "detail.longitude": "经度",
     "detail.metroCode": "Metro code",
+    "geoip.source": "数据源",
+    "geoip.operatorUse": "运维用途",
+    "geoip.operatorUseValue": "策略提示、allowlist 复核、事件上下文",
     "message.lookupFailed": "查询失败。请重试或检查 API 响应。",
     "message.invalidIpv4": "请输入有效的 IPv4 地址。",
     "message.unknown": "未知",
@@ -413,8 +425,9 @@ const translations = {
     "home.signalCountry": "국가 조회",
     "home.signalLocation": "위치 정보",
     "home.signalCurl": "curl 지원",
-    "home.readableTitle": "읽기 쉬운 네트워크 정보",
-    "home.readableText": "운영자가 자주 보는 필드를 명확히 보여 주고, 조회 결과가 원시 dump처럼 보이지 않게 합니다.",
+    "home.readableTitle": "정책 판단을 위한 GeoIP 맥락",
+    "home.readableText":
+      "위치 데이터는 방화벽 정책, 트래픽 검토, 장애 기록을 위한 운영 힌트로 보고 호스트 단위의 정확한 위치로 보지 않습니다.",
     "home.cliTitle": "curl 지원 엔드포인트",
     "home.cliText": "shell 스크립트, 프로비저닝, 모니터링 확인, 장애 기록에서 같은 서비스를 사용할 수 있습니다.",
     "home.moreToolsTitle": "운영자 도구",
@@ -438,6 +451,9 @@ const translations = {
     "detail.latitude": "위도",
     "detail.longitude": "경도",
     "detail.metroCode": "Metro code",
+    "geoip.source": "데이터 소스",
+    "geoip.operatorUse": "운영 용도",
+    "geoip.operatorUseValue": "정책 힌트, allowlist 검토, 인시던트 맥락",
     "message.lookupFailed": "조회에 실패했습니다. 다시 시도하거나 API 응답을 확인하세요.",
     "message.invalidIpv4": "유효한 IPv4 주소가 필요합니다.",
     "message.unknown": "알 수 없음",
@@ -517,9 +533,9 @@ const translations = {
     "home.signalCountry": "Consulta de país",
     "home.signalLocation": "Detalle de ubicación",
     "home.signalCurl": "listo para curl",
-    "home.readableTitle": "Detalle de red legible",
+    "home.readableTitle": "Contexto GeoIP para decisiones de política",
     "home.readableText":
-      "Mantenga visibles los campos que más necesitan los operadores, sin que el resultado parezca un dump sin procesar.",
+      "Use los datos de ubicación como una pista operativa para firewall, revisión de tráfico e incidentes; no son posicionamiento exacto del host.",
     "home.cliTitle": "Endpoints listos para curl",
     "home.cliText": "Use el mismo servicio desde scripts de shell, aprovisionamiento, monitoreo o notas de incidentes.",
     "home.moreToolsTitle": "Más herramientas para operadores",
@@ -543,6 +559,9 @@ const translations = {
     "detail.latitude": "Latitud",
     "detail.longitude": "Longitud",
     "detail.metroCode": "Código metro",
+    "geoip.source": "Fuente de datos",
+    "geoip.operatorUse": "Uso operativo",
+    "geoip.operatorUseValue": "Pista de política, revisión de allowlist, contexto de incidente",
     "message.lookupFailed": "La consulta falló. Reintente o revise la respuesta de la API.",
     "message.invalidIpv4": "Se requiere una dirección IPv4 válida.",
     "message.unknown": "Desconocido",
@@ -623,8 +642,9 @@ const translations = {
     "home.signalCountry": "Recherche pays",
     "home.signalLocation": "Détail de localisation",
     "home.signalCurl": "prêt pour curl",
-    "home.readableTitle": "Détails réseau lisibles",
-    "home.readableText": "Gardez visibles les champs dont les opérateurs ont le plus besoin, sans transformer le résultat en dump brut.",
+    "home.readableTitle": "Contexte GeoIP pour les décisions de politique",
+    "home.readableText":
+      "Utilisez la localisation comme indice opérationnel pour firewall, revue de trafic et notes d'incident; ce n'est pas une position précise de l'hôte.",
     "home.cliTitle": "Endpoints prêts pour curl",
     "home.cliText":
       "Utilisez le même service depuis des scripts shell, tâches de provisionnement, contrôles de supervision ou notes d'incident.",
@@ -649,6 +669,9 @@ const translations = {
     "detail.latitude": "Latitude",
     "detail.longitude": "Longitude",
     "detail.metroCode": "Code métro",
+    "geoip.source": "Source des données",
+    "geoip.operatorUse": "Usage opérationnel",
+    "geoip.operatorUseValue": "Indice de politique, revue allowlist, contexte d'incident",
     "message.lookupFailed": "La recherche a échoué. Réessayez ou vérifiez la réponse de l'API.",
     "message.invalidIpv4": "Une adresse IPv4 valide est requise.",
     "message.unknown": "Inconnu",
@@ -731,8 +754,9 @@ const translations = {
     "home.signalCountry": "Länder-Lookup",
     "home.signalLocation": "Standortdetails",
     "home.signalCurl": "curl-freundlich",
-    "home.readableTitle": "Lesbare Netzwerkdetails",
-    "home.readableText": "Halten Sie die wichtigsten Felder sichtbar, ohne dass das Ergebnis wie ein roher Dump wirkt.",
+    "home.readableTitle": "GeoIP-Kontext für Policy-Entscheidungen",
+    "home.readableText":
+      "Nutzen Sie Standortdaten als operativen Hinweis für Firewall-Policy, Traffic-Prüfung und Incident-Notizen, nicht als exakte Host-Position.",
     "home.cliTitle": "curl-freundliche Endpunkte",
     "home.cliText": "Nutzen Sie denselben Dienst aus Shell-Skripten, Provisioning-Jobs, Monitoring-Checks oder Incident-Notizen.",
     "home.moreToolsTitle": "Mehr Operator-Tools",
@@ -756,6 +780,9 @@ const translations = {
     "detail.latitude": "Breitengrad",
     "detail.longitude": "Längengrad",
     "detail.metroCode": "Metro-Code",
+    "geoip.source": "Datenquelle",
+    "geoip.operatorUse": "Operative Nutzung",
+    "geoip.operatorUseValue": "Policy-Hinweis, Allowlist-Prüfung, Incident-Kontext",
     "message.lookupFailed": "Lookup fehlgeschlagen. Bitte erneut versuchen oder API-Antwort prüfen.",
     "message.invalidIpv4": "Eine gültige IPv4-Adresse ist erforderlich.",
     "message.unknown": "Unbekannt",
@@ -838,8 +865,9 @@ const translations = {
     "home.signalCountry": "Consulta de país",
     "home.signalLocation": "Detalhe de localização",
     "home.signalCurl": "pronto para curl",
-    "home.readableTitle": "Detalhes de rede legíveis",
-    "home.readableText": "Mantenha visíveis os campos mais importantes para operadores, sem parecer um dump bruto.",
+    "home.readableTitle": "Contexto GeoIP para decisões de política",
+    "home.readableText":
+      "Use dados de localização como pista operacional para firewall, revisão de tráfego e incidentes; não como posição exata do host.",
     "home.cliTitle": "Endpoints prontos para curl",
     "home.cliText": "Use o mesmo serviço em scripts shell, provisionamento, checks de monitoramento ou notas de incidente.",
     "home.moreToolsTitle": "Mais ferramentas para operadores",
@@ -863,6 +891,9 @@ const translations = {
     "detail.latitude": "Latitude",
     "detail.longitude": "Longitude",
     "detail.metroCode": "Código metro",
+    "geoip.source": "Fonte de dados",
+    "geoip.operatorUse": "Uso operacional",
+    "geoip.operatorUseValue": "Pista de política, revisão de allowlist, contexto de incidente",
     "message.lookupFailed": "A consulta falhou. Tente novamente ou verifique a resposta da API.",
     "message.invalidIpv4": "É necessário um endereço IPv4 válido.",
     "message.unknown": "Desconhecido",
@@ -1041,17 +1072,37 @@ function renderShell(content: string): void {
               .join("")}
           </div>
           <div class="header-actions">
-            <label class="language-picker">
-              <span class="sr-only">${escapeHtml(t("language.label"))}</span>
-              <select id="language-select" aria-label="${escapeHtml(t("language.label"))}">
+            <div class="language-picker" id="language-picker">
+              <button
+                class="language-button"
+                id="language-button"
+                type="button"
+                aria-label="${escapeHtml(`${t("language.label")}: ${currentLocaleOption().label}`)}"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                title="${escapeHtml(`${t("language.label")}: ${currentLocaleOption().label}`)}"
+              >
+                <span class="language-flag" aria-hidden="true">${escapeHtml(currentLocaleOption().flag)}</span>
+              </button>
+              <div class="language-menu" id="language-menu" role="menu" hidden>
                 ${localeOptions
                   .map(
-                    (option) =>
-                      `<option value="${option.value}" ${option.value === locale ? "selected" : ""}>${escapeHtml(option.label)}</option>`,
+                    (option) => `
+                      <button
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked="${option.value === locale ? "true" : "false"}"
+                        data-locale="${option.value}"
+                      >
+                        <span class="language-flag" aria-hidden="true">${escapeHtml(option.flag)}</span>
+                        <span>${escapeHtml(option.label)}</span>
+                        <strong>${option.value === locale ? "✓" : ""}</strong>
+                      </button>
+                    `,
                   )
                   .join("")}
-              </select>
-            </label>
+              </div>
+            </div>
             <div class="nav-ip" id="nav-ip" hidden>
               <span>${escapeHtml(t("nav.currentIp"))}</span>
               <strong id="nav-ip-value"></strong>
@@ -1069,7 +1120,7 @@ function renderShell(content: string): void {
       </footer>
     </div>
   `;
-  setupLanguageSelect();
+  setupLanguageMenu();
 }
 
 function setDocumentMetadata(): void {
@@ -1081,19 +1132,87 @@ function setDocumentMetadata(): void {
   }
 }
 
-function setupLanguageSelect(): void {
-  const select = document.querySelector<HTMLSelectElement>("#language-select");
-  if (!select) return;
-  select.addEventListener("change", () => {
-    const nextLocale = normalizeLocale(select.value);
-    if (!nextLocale || nextLocale === locale) return;
-    locale = nextLocale;
-    try {
-      localStorage.setItem(LOCALE_STORAGE_KEY, locale);
-    } catch {
-      // localStorage can be unavailable in strict privacy modes.
+function currentLocaleOption(): LocaleOption {
+  return localeOptions.find((option) => option.value === locale) ?? localeOptions[0];
+}
+
+function setupLanguageMenu(): void {
+  const picker = document.querySelector<HTMLDivElement>("#language-picker");
+  const button = document.querySelector<HTMLButtonElement>("#language-button");
+  const menu = document.querySelector<HTMLDivElement>("#language-menu");
+  if (!picker || !button || !menu) return;
+  const languagePicker = picker;
+  const languageButton = button;
+  const languageMenu = menu;
+
+  let keydownHandler: ((event: KeyboardEvent) => void) | null = null;
+  let pointerdownHandler: ((event: PointerEvent) => void) | null = null;
+
+  function closeMenu(): void {
+    if (languageMenu.hidden) return;
+    languageMenu.hidden = true;
+    languageButton.setAttribute("aria-expanded", "false");
+    if (keydownHandler) {
+      document.removeEventListener("keydown", keydownHandler);
+      keydownHandler = null;
     }
-    renderPage();
+    if (pointerdownHandler) {
+      document.removeEventListener("pointerdown", pointerdownHandler, true);
+      pointerdownHandler = null;
+    }
+  }
+
+  function openMenu(): void {
+    if (!languageMenu.hidden) return;
+    languageMenu.hidden = false;
+    languageButton.setAttribute("aria-expanded", "true");
+    keydownHandler = (event) => {
+      if (event.key === "Escape") {
+        closeMenu();
+        languageButton.focus();
+      }
+    };
+    pointerdownHandler = (event) => {
+      const target = event.target;
+      if (!(target instanceof Node) || !languagePicker.contains(target)) {
+        closeMenu();
+      }
+    };
+    document.addEventListener("keydown", keydownHandler);
+    document.addEventListener("pointerdown", pointerdownHandler, true);
+  }
+
+  button.addEventListener("click", () => {
+    if (languageMenu.hidden) {
+      openMenu();
+    } else {
+      closeMenu();
+    }
+  });
+
+  button.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openMenu();
+      languageMenu.querySelector<HTMLButtonElement>("[data-locale]")?.focus();
+    }
+  });
+
+  languageMenu.querySelectorAll<HTMLButtonElement>("[data-locale]").forEach((item) => {
+    item.addEventListener("click", () => {
+      const nextLocale = normalizeLocale(item.dataset.locale);
+      if (!nextLocale || nextLocale === locale) {
+        closeMenu();
+        return;
+      }
+      locale = nextLocale;
+      try {
+        localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+      } catch {
+        // localStorage can be unavailable in strict privacy modes.
+      }
+      renderPage();
+    });
   });
 }
 
@@ -1235,7 +1354,6 @@ function detailsFor(info: IpInfo): DetailRow[] {
     info.city.Subdivisions?.map((item) => getName(item.Names))
       .filter(Boolean)
       .join(", ") ?? "";
-  const coordinates = info.city.Location ? `${info.city.Location.Latitude}, ${info.city.Location.Longitude}` : "";
   return [
     {
       label: "AS",
@@ -1248,23 +1366,37 @@ function detailsFor(info: IpInfo): DetailRow[] {
     { label: t("detail.registeredCountry"), value: registeredCountry !== country ? registeredCountry : "" },
     { label: t("detail.subdivision"), value: subdivisions },
     { label: t("detail.city"), value: getName(info.city.City?.Names) },
-    { label: t("detail.postalCode"), value: info.city.Postal.Code },
     { label: t("detail.timezone"), value: info.city.Location?.TimeZone ?? "" },
-    { label: t("detail.coordinates"), value: coordinates },
   ];
 }
 
 function locationRowsFor(info: IpInfo): DetailRow[] {
-  if (!info.city.Location) {
-    return [{ label: t("detail.status"), value: t("detail.waiting") }];
+  if (!hasUsableLocation(info)) {
+    return [{ label: t("detail.status"), value: t("message.unknown") }];
   }
+  const location = info.city.Location;
+  const coordinates = `${location.Latitude}, ${location.Longitude}`;
   return [
-    { label: t("detail.accuracyRadius"), value: `${info.city.Location.AccuracyRadius} km` },
-    { label: t("detail.latitude"), value: String(info.city.Location.Latitude) },
-    { label: t("detail.longitude"), value: String(info.city.Location.Longitude) },
-    { label: t("detail.metroCode"), value: String(info.city.Location.MetroCode) },
-    { label: t("detail.timezone"), value: info.city.Location.TimeZone },
+    { label: t("detail.accuracyRadius"), value: `${location.AccuracyRadius} km` },
+    { label: t("detail.coordinates"), value: coordinates },
+    { label: t("geoip.source"), value: "MaxMind GeoLite2" },
+    { label: t("geoip.operatorUse"), value: t("geoip.operatorUseValue") },
   ];
+}
+
+function hasUsableLocation(
+  info: IpInfo,
+): info is IpInfo & { city: IpInfo["city"] & { Location: NonNullable<IpInfo["city"]["Location"]> } } {
+  const location = info.city.Location;
+  return Boolean(location && location.AccuracyRadius > 0 && Number.isFinite(location.Latitude) && Number.isFinite(location.Longitude));
+}
+
+function renderWorldMap(): string {
+  return `
+    <svg class="world-map" viewBox="${escapeHtml(WORLD_MAP_VIEW_BOX)}" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      ${WORLD_MAP_PATHS.map((path) => `<path d="${escapeHtml(path)}"></path>`).join("")}
+    </svg>
+  `;
 }
 
 function renderHome(): void {
@@ -1304,16 +1436,6 @@ function renderHome(): void {
         </section>
       </div>
     </section>
-    <section class="signal-strip" aria-label="${escapeHtml(t("home.lookupCoverage"))}">
-      <div><span>${escapeHtml(t("home.signalAsn"))}</span><strong id="signal-asn">${escapeHtml(t("home.signalReady"))}</strong></div>
-      <div><span>${escapeHtml(t("home.signalGeoip"))}</span><strong id="signal-country">${escapeHtml(
-        t("home.signalCountry"),
-      )}</strong></div>
-      <div><span>${escapeHtml(t("home.signalCoordinates"))}</span><strong id="signal-coordinates">${escapeHtml(
-        t("home.signalLocation"),
-      )}</strong></div>
-      <div><span>${escapeHtml(t("home.signalCli"))}</span><strong>${escapeHtml(t("home.signalCurl"))}</strong></div>
-    </section>
     <section class="content-section location-section">
       <div class="section-heading">
         <h2>${escapeHtml(t("home.readableTitle"))}</h2>
@@ -1321,12 +1443,10 @@ function renderHome(): void {
       </div>
       <div class="location-grid">
         <div class="location-map" aria-hidden="true">
-          <span class="map-node node-a"></span>
-          <span class="map-node node-b"></span>
-          <span class="map-node node-c"></span>
-          <span class="map-line line-a"></span>
-          <span class="map-line line-b"></span>
+          ${renderWorldMap()}
+          <span class="map-target" id="map-target" hidden><span></span></span>
           <strong id="map-label">GeoIP</strong>
+          <small>Made with Natural Earth.</small>
         </div>
         <div class="mini-table" id="location-table"></div>
       </div>
@@ -1378,13 +1498,8 @@ async function initHome(): Promise<void> {
     requiredElement("#ip-display").textContent = info.ipAddress || t("message.unknown");
     requiredElement("#detail-table").innerHTML = renderRows(detailsFor(info));
     requiredElement("#location-table").innerHTML = renderRows(locationRowsFor(info));
-    requiredElement("#signal-asn").textContent =
-      info.asn.AutonomousSystemNumber > 0 ? `AS${info.asn.AutonomousSystemNumber}` : t("home.signalReady");
-    requiredElement("#signal-country").textContent = getName(info.city.Country?.Names) || t("home.signalCountry");
-    requiredElement("#signal-coordinates").textContent = info.city.Location
-      ? `${info.city.Location.Latitude}, ${info.city.Location.Longitude}`
-      : t("home.signalLocation");
-    requiredElement("#map-label").textContent = getName(info.city.Country?.Names) || "GeoIP";
+    requiredElement("#map-label").textContent = hasUsableLocation(info) ? getName(info.city.Country?.Names) || "GeoIP" : "GeoIP";
+    updateMapTarget(info);
     requiredElement("#license").innerHTML = licenseHtml();
     renderCommandRows(currentIp);
   }
@@ -1427,6 +1542,23 @@ async function initHome(): Promise<void> {
         setMessage(t("message.lookupFailed"));
       });
   });
+}
+
+function updateMapTarget(info: IpInfo): void {
+  const target = requiredElement<HTMLElement>("#map-target");
+  if (!hasUsableLocation(info)) {
+    target.hidden = true;
+    return;
+  }
+  const x = ((info.city.Location.Longitude + 180) / 360) * 100;
+  const y = ((90 - info.city.Location.Latitude) / 180) * 100;
+  target.style.left = `${clamp(x, 0, 100)}%`;
+  target.style.top = `${clamp(y, 0, 100)}%`;
+  target.hidden = false;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 function licenseHtml(): string {
