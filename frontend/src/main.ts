@@ -53,6 +53,13 @@ type ViewTransitionDocument = Document & {
   startViewTransition?: (callback: () => void) => unknown;
 };
 
+type CountryFirewallMode = "nftables" | "legacy";
+
+type CountryCommandExample = {
+  title: string;
+  command: string;
+};
+
 type CidrResult = {
   base: string;
   mask: string;
@@ -170,14 +177,20 @@ const translations = {
     "cidr.first": "First usable address",
     "cidr.last": "Last usable address",
     "country.description":
-      "Daily generated country-based IPv4 CIDR lists for access control, ipset, firewall rules and operations runbooks.",
+      "Daily generated country-based IPv4 CIDR lists for nftables, legacy ipset/iptables rules, and operations runbooks.",
     "country.download": "Download all-ipv4cidr.tsv.gz",
     "country.formatTitle": "Policy-ready list format",
     "country.formatText":
       "The release artifact is collected from public RIR data and published as tab-separated country code plus CIDR entries.",
-    "country.installIpset": "Install ipset",
-    "country.createJapanSet": "Create and load a Japan-only set",
-    "country.allowUdp": "Allow UDP game ports from the set",
+    "country.firewallTabs": "Firewall examples",
+    "country.nftablesTab": "nftables",
+    "country.legacyTab": "Legacy iptables/ipset",
+    "country.installNftables": "Install nftables on Debian 13",
+    "country.createJapanNftSet": "Create and load a Japan-only nftables set",
+    "country.allowNftUdp": "Allow UDP game ports from the nftables set",
+    "country.installIpset": "Install legacy ipset/iptables",
+    "country.createJapanSet": "Create and load a Japan-only ipset",
+    "country.allowUdp": "Allow UDP game ports from the ipset",
     "playground.description":
       "A lightweight browser scratchpad for common text-processing patterns. It is intentionally small and does not run a full shell.",
     "playground.tabs": "Command modes",
@@ -279,13 +292,19 @@ const translations = {
     "cidr.size": "アドレス数",
     "cidr.first": "最初の利用可能アドレス",
     "cidr.last": "最後の利用可能アドレス",
-    "country.description": "アクセス制御、ipset、firewall ルール、運用 runbook 向けに日次生成される国別 IPv4 CIDR リストです。",
+    "country.description": "nftables、legacy ipset/iptables ルール、運用 runbook 向けに日次生成される国別 IPv4 CIDR リストです。",
     "country.download": "all-ipv4cidr.tsv.gz をダウンロード",
     "country.formatTitle": "ポリシーに使いやすいリスト形式",
     "country.formatText": "release artifact は公開 RIR データから収集され、国コードと CIDR を tab 区切りで公開します。",
-    "country.installIpset": "ipset をインストール",
-    "country.createJapanSet": "日本のみの set を作成して読み込む",
-    "country.allowUdp": "set から UDP game port を許可",
+    "country.firewallTabs": "Firewall 例",
+    "country.nftablesTab": "nftables",
+    "country.legacyTab": "Legacy iptables/ipset",
+    "country.installNftables": "Debian 13 に nftables をインストール",
+    "country.createJapanNftSet": "日本のみの nftables set を作成して読み込む",
+    "country.allowNftUdp": "nftables set から UDP game port を許可",
+    "country.installIpset": "legacy ipset/iptables をインストール",
+    "country.createJapanSet": "日本のみの ipset を作成して読み込む",
+    "country.allowUdp": "ipset から UDP game port を許可",
     "playground.description": "よく使うテキスト処理パターン向けの軽量なブラウザ scratchpad です。full shell は実行しません。",
     "playground.tabs": "コマンドモード",
     "playground.pattern": "パターンまたは式",
@@ -385,13 +404,19 @@ const translations = {
     "cidr.size": "地址数量",
     "cidr.first": "第一个可用地址",
     "cidr.last": "最后一个可用地址",
-    "country.description": "每日生成的国家 IPv4 CIDR 列表，适用于访问控制、ipset、防火墙规则和运维 runbook。",
+    "country.description": "每日生成的国家 IPv4 CIDR 列表，适用于 nftables、legacy ipset/iptables 规则和运维 runbook。",
     "country.download": "下载 all-ipv4cidr.tsv.gz",
     "country.formatTitle": "适合策略使用的列表格式",
     "country.formatText": "release artifact 从公开 RIR 数据收集，并以制表符分隔的国家代码和 CIDR 条目发布。",
-    "country.installIpset": "安装 ipset",
-    "country.createJapanSet": "创建并加载仅日本的 set",
-    "country.allowUdp": "允许来自该 set 的 UDP 游戏端口",
+    "country.firewallTabs": "防火墙示例",
+    "country.nftablesTab": "nftables",
+    "country.legacyTab": "Legacy iptables/ipset",
+    "country.installNftables": "在 Debian 13 上安装 nftables",
+    "country.createJapanNftSet": "创建并加载仅日本的 nftables set",
+    "country.allowNftUdp": "允许来自 nftables set 的 UDP 游戏端口",
+    "country.installIpset": "安装 legacy ipset/iptables",
+    "country.createJapanSet": "创建并加载仅日本的 ipset",
+    "country.allowUdp": "允许来自该 ipset 的 UDP 游戏端口",
     "playground.description": "用于常见文本处理模式的轻量浏览器 scratchpad。它故意保持小巧，不运行完整 shell。",
     "playground.tabs": "命令模式",
     "playground.pattern": "模式或表达式",
@@ -493,13 +518,19 @@ const translations = {
     "cidr.size": "주소 수",
     "cidr.first": "첫 번째 사용 가능 주소",
     "cidr.last": "마지막 사용 가능 주소",
-    "country.description": "접근 제어, ipset, 방화벽 규칙, 운영 runbook을 위한 국가별 IPv4 CIDR 목록을 매일 생성합니다.",
+    "country.description": "nftables, legacy ipset/iptables 규칙, 운영 runbook을 위한 국가별 IPv4 CIDR 목록을 매일 생성합니다.",
     "country.download": "all-ipv4cidr.tsv.gz 다운로드",
     "country.formatTitle": "정책에 바로 쓰기 좋은 목록 형식",
     "country.formatText": "release artifact는 공개 RIR 데이터에서 수집되며 국가 코드와 CIDR 항목을 탭으로 구분해 게시합니다.",
-    "country.installIpset": "ipset 설치",
-    "country.createJapanSet": "일본 전용 set 생성 및 로드",
-    "country.allowUdp": "set에서 UDP 게임 포트 허용",
+    "country.firewallTabs": "방화벽 예시",
+    "country.nftablesTab": "nftables",
+    "country.legacyTab": "Legacy iptables/ipset",
+    "country.installNftables": "Debian 13에 nftables 설치",
+    "country.createJapanNftSet": "일본 전용 nftables set 생성 및 로드",
+    "country.allowNftUdp": "nftables set에서 UDP 게임 포트 허용",
+    "country.installIpset": "legacy ipset/iptables 설치",
+    "country.createJapanSet": "일본 전용 ipset 생성 및 로드",
+    "country.allowUdp": "ipset에서 UDP 게임 포트 허용",
     "playground.description": "일반적인 텍스트 처리 패턴을 위한 가벼운 브라우저 scratchpad입니다. full shell은 실행하지 않습니다.",
     "playground.tabs": "명령 모드",
     "playground.pattern": "패턴 또는 식",
@@ -600,14 +631,21 @@ const translations = {
     "cidr.size": "Cantidad de direcciones",
     "cidr.first": "Primera dirección usable",
     "cidr.last": "Última dirección usable",
-    "country.description": "Listas CIDR IPv4 por país generadas a diario para control de acceso, ipset, firewall y runbooks de operación.",
+    "country.description":
+      "Listas CIDR IPv4 por país generadas a diario para nftables, reglas legacy ipset/iptables y runbooks de operación.",
     "country.download": "Descargar all-ipv4cidr.tsv.gz",
     "country.formatTitle": "Formato listo para políticas",
     "country.formatText":
       "El release artifact se recopila desde datos RIR públicos y se publica como código de país y entradas CIDR separados por tabuladores.",
-    "country.installIpset": "Instalar ipset",
-    "country.createJapanSet": "Crear y cargar un set solo de Japón",
-    "country.allowUdp": "Permitir puertos UDP de juego desde el set",
+    "country.firewallTabs": "Ejemplos de firewall",
+    "country.nftablesTab": "nftables",
+    "country.legacyTab": "Legacy iptables/ipset",
+    "country.installNftables": "Instalar nftables en Debian 13",
+    "country.createJapanNftSet": "Crear y cargar un set nftables solo de Japón",
+    "country.allowNftUdp": "Permitir puertos UDP de juego desde el set nftables",
+    "country.installIpset": "Instalar legacy ipset/iptables",
+    "country.createJapanSet": "Crear y cargar un ipset solo de Japón",
+    "country.allowUdp": "Permitir puertos UDP de juego desde el ipset",
     "playground.description":
       "Un scratchpad ligero en el navegador para patrones comunes de procesamiento de texto. Es intencionalmente pequeño y no ejecuta un shell completo.",
     "playground.tabs": "Modos de comando",
@@ -712,14 +750,20 @@ const translations = {
     "cidr.first": "Première adresse utilisable",
     "cidr.last": "Dernière adresse utilisable",
     "country.description":
-      "Listes CIDR IPv4 par pays générées chaque jour pour contrôle d'accès, ipset, règles firewall et runbooks d'exploitation.",
+      "Listes CIDR IPv4 par pays générées chaque jour pour nftables, règles legacy ipset/iptables et runbooks d'exploitation.",
     "country.download": "Télécharger all-ipv4cidr.tsv.gz",
     "country.formatTitle": "Format prêt pour les politiques",
     "country.formatText":
       "Le release artifact est collecté depuis les données RIR publiques et publié en code pays plus entrées CIDR séparées par tabulations.",
-    "country.installIpset": "Installer ipset",
-    "country.createJapanSet": "Créer et charger un set Japon uniquement",
-    "country.allowUdp": "Autoriser les ports UDP de jeu depuis le set",
+    "country.firewallTabs": "Exemples firewall",
+    "country.nftablesTab": "nftables",
+    "country.legacyTab": "Legacy iptables/ipset",
+    "country.installNftables": "Installer nftables sur Debian 13",
+    "country.createJapanNftSet": "Créer et charger un set nftables Japon uniquement",
+    "country.allowNftUdp": "Autoriser les ports UDP de jeu depuis le set nftables",
+    "country.installIpset": "Installer legacy ipset/iptables",
+    "country.createJapanSet": "Créer et charger un ipset Japon uniquement",
+    "country.allowUdp": "Autoriser les ports UDP de jeu depuis l'ipset",
     "playground.description":
       "Un scratchpad navigateur léger pour les traitements texte courants. Il reste volontairement petit et n'exécute pas un shell complet.",
     "playground.tabs": "Modes de commande",
@@ -823,14 +867,20 @@ const translations = {
     "cidr.first": "Erste nutzbare Adresse",
     "cidr.last": "Letzte nutzbare Adresse",
     "country.description":
-      "Täglich generierte länderbasierte IPv4-CIDR-Listen für Zugriffskontrolle, ipset, Firewall-Regeln und Betriebs-Runbooks.",
+      "Täglich generierte länderbasierte IPv4-CIDR-Listen für nftables, legacy ipset/iptables-Regeln und Betriebs-Runbooks.",
     "country.download": "all-ipv4cidr.tsv.gz herunterladen",
     "country.formatTitle": "Policy-fähiges Listenformat",
     "country.formatText":
       "Das release artifact wird aus öffentlichen RIR-Daten gesammelt und als tab-getrennte Ländercodes plus CIDR-Einträge veröffentlicht.",
-    "country.installIpset": "ipset installieren",
-    "country.createJapanSet": "Japan-only Set erstellen und laden",
-    "country.allowUdp": "UDP-Spielports aus dem Set erlauben",
+    "country.firewallTabs": "Firewall-Beispiele",
+    "country.nftablesTab": "nftables",
+    "country.legacyTab": "Legacy iptables/ipset",
+    "country.installNftables": "nftables auf Debian 13 installieren",
+    "country.createJapanNftSet": "Japan-only nftables-Set erstellen und laden",
+    "country.allowNftUdp": "UDP-Spielports aus dem nftables-Set erlauben",
+    "country.installIpset": "legacy ipset/iptables installieren",
+    "country.createJapanSet": "Japan-only ipset erstellen und laden",
+    "country.allowUdp": "UDP-Spielports aus dem ipset erlauben",
     "playground.description":
       "Ein leichtes Browser-Scratchpad für häufige Textverarbeitungsmuster. Es ist bewusst klein und führt keine vollständige Shell aus.",
     "playground.tabs": "Befehlsmodi",
@@ -934,14 +984,20 @@ const translations = {
     "cidr.first": "Primeiro endereço utilizável",
     "cidr.last": "Último endereço utilizável",
     "country.description":
-      "Listas CIDR IPv4 por país geradas diariamente para controle de acesso, ipset, regras de firewall e runbooks de operação.",
+      "Listas CIDR IPv4 por país geradas diariamente para nftables, regras legacy ipset/iptables e runbooks de operação.",
     "country.download": "Baixar all-ipv4cidr.tsv.gz",
     "country.formatTitle": "Formato pronto para políticas",
     "country.formatText":
       "O release artifact é coletado de dados RIR públicos e publicado como código de país e entradas CIDR separados por tabulação.",
-    "country.installIpset": "Instalar ipset",
-    "country.createJapanSet": "Criar e carregar um set somente do Japão",
-    "country.allowUdp": "Permitir portas UDP de jogo a partir do set",
+    "country.firewallTabs": "Exemplos de firewall",
+    "country.nftablesTab": "nftables",
+    "country.legacyTab": "Legacy iptables/ipset",
+    "country.installNftables": "Instalar nftables no Debian 13",
+    "country.createJapanNftSet": "Criar e carregar um set nftables somente do Japão",
+    "country.allowNftUdp": "Permitir portas UDP de jogo a partir do set nftables",
+    "country.installIpset": "Instalar legacy ipset/iptables",
+    "country.createJapanSet": "Criar e carregar um ipset somente do Japão",
+    "country.allowUdp": "Permitir portas UDP de jogo a partir do ipset",
     "playground.description":
       "Um scratchpad leve no navegador para padrões comuns de processamento de texto. Ele é intencionalmente pequeno e não executa um shell completo.",
     "playground.tabs": "Modos de comando",
@@ -1785,11 +1841,27 @@ function renderCountry(): void {
         <h2>${escapeHtml(t("country.formatTitle"))}</h2>
         <p>${escapeHtml(t("country.formatText"))}</p>
       </div>
-      <div class="command-rail">
-        ${codeBlock(t("country.installIpset"), "apt install -y ipset")}
-        ${codeBlock(
-          t("country.createJapanSet"),
-          `URL=https://github.com/inet-ip-info/WorldIPv4Map/releases/latest/download/all-ipv4cidr.tsv.gz
+      <div class="tabs country-tabs" role="tablist" aria-label="${escapeHtml(t("country.firewallTabs"))}">
+        <button class="active" type="button" role="tab" aria-selected="true" data-country-mode="nftables">
+          ${escapeHtml(t("country.nftablesTab"))}
+        </button>
+        <button type="button" role="tab" aria-selected="false" data-country-mode="legacy">
+          ${escapeHtml(t("country.legacyTab"))}
+        </button>
+      </div>
+      <div class="command-rail" id="country-command-rail"></div>
+    </section>
+  `);
+  initCountryTabs();
+}
+
+function countryCommandExamples(mode: CountryFirewallMode): CountryCommandExample[] {
+  if (mode === "legacy") {
+    return [
+      { title: t("country.installIpset"), command: "apt install -y ipset iptables" },
+      {
+        title: t("country.createJapanSet"),
+        command: `URL=https://github.com/inet-ip-info/WorldIPv4Map/releases/latest/download/all-ipv4cidr.tsv.gz
 CIDRFILE=/var/lib/ipset/ipset_list
 SETNAME=allow_list
 
@@ -1797,32 +1869,106 @@ curl -sL "$URL" |
   zcat |
   sed -n 's/^JP\\t//p' > "$CIDRFILE"
 
-ipset create "$SETNAME" hash:net
+ipset create "$SETNAME" hash:net -exist
 ipset flush "$SETNAME"
-while read line; do
-  ipset add "$SETNAME" "$line"
+while read -r cidr; do
+  ipset add "$SETNAME" "$cidr"
 done < "$CIDRFILE"`,
-        )}
-        ${codeBlock(
-          t("country.allowUdp"),
-          `iptables -A INPUT -p udp --dport 26900:26903 -m set --match-set "$SETNAME" src -j ACCEPT
+      },
+      {
+        title: t("country.allowUdp"),
+        command: `SETNAME=allow_list
+
+iptables -A INPUT -p udp --dport 26900:26903 -m set --match-set "$SETNAME" src -j ACCEPT
 iptables -A INPUT -p udp --dport 26900:26903 -j DROP`,
-        )}
-      </div>
-    </section>
-  `);
-  initCopyButtons();
+      },
+    ];
+  }
+
+  return [
+    {
+      title: t("country.installNftables"),
+      command: `apt install -y nftables
+systemctl enable --now nftables`,
+    },
+    {
+      title: t("country.createJapanNftSet"),
+      command: `URL=https://github.com/inet-ip-info/WorldIPv4Map/releases/latest/download/all-ipv4cidr.tsv.gz
+SETNAME=jp_ipv4
+
+nft list table inet filter >/dev/null 2>&1 || nft add table inet filter
+nft list set inet filter "$SETNAME" >/dev/null 2>&1 ||
+  nft "add set inet filter $SETNAME { type ipv4_addr; flags interval; }"
+nft flush set inet filter "$SETNAME"
+
+curl -sL "$URL" |
+  zcat |
+  awk -F '\\t' '$1 == "JP" { print $2 }' |
+  while read -r cidr; do
+    nft add element inet filter "$SETNAME" "{ $cidr }"
+  done`,
+    },
+    {
+      title: t("country.allowNftUdp"),
+      command: `SETNAME=jp_ipv4
+
+nft list chain inet filter input >/dev/null 2>&1 ||
+  nft 'add chain inet filter input { type filter hook input priority 0; policy accept; }'
+
+nft add rule inet filter input udp dport 26900-26903 ip saddr @"$SETNAME" accept
+nft add rule inet filter input udp dport 26900-26903 drop`,
+    },
+  ];
 }
 
-function codeBlock(title: string, code: string): string {
-  return `
-    <article class="code-block">
-      <div><strong>${escapeHtml(title)}</strong><button type="button" data-copy="${escapeHtml(code)}">${escapeHtml(
-        t("button.copy"),
-      )}</button></div>
-      <pre><code>${escapeHtml(code)}</code></pre>
-    </article>
-  `;
+function initCountryTabs(): void {
+  const rail = requiredElement<HTMLDivElement>("#country-command-rail");
+  const tabs = [...document.querySelectorAll<HTMLButtonElement>("[data-country-mode]")];
+
+  function setMode(mode: CountryFirewallMode): void {
+    tabs.forEach((tab) => {
+      const isActive = tab.dataset.countryMode === mode;
+      tab.classList.toggle("active", isActive);
+      tab.setAttribute("aria-selected", String(isActive));
+    });
+    rail.replaceChildren(...countryCommandExamples(mode).map(({ title, command }) => createCodeBlock(title, command)));
+  }
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const mode = tab.dataset.countryMode === "legacy" ? "legacy" : "nftables";
+      setMode(mode);
+    });
+  });
+  setMode("nftables");
+}
+
+function createCodeBlock(title: string, code: string): HTMLElement {
+  const article = document.createElement("article");
+  article.className = "code-block";
+
+  const header = document.createElement("div");
+  const label = document.createElement("strong");
+  label.textContent = title;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = t("button.copy");
+  button.addEventListener("click", () => {
+    void navigator.clipboard?.writeText(code);
+    button.textContent = t("button.copied");
+    window.setTimeout(() => {
+      button.textContent = t("button.copy");
+    }, 1400);
+  });
+  header.append(label, button);
+
+  const pre = document.createElement("pre");
+  const codeElement = document.createElement("code");
+  codeElement.textContent = code;
+  pre.append(codeElement);
+  article.append(header, pre);
+
+  return article;
 }
 
 function renderPlayground(): void {
@@ -1910,19 +2056,6 @@ function initPlayground(): void {
   expression.addEventListener("input", run);
   stdin.addEventListener("input", run);
   run();
-}
-
-function initCopyButtons(): void {
-  document.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const value = button.dataset.copy ?? "";
-      void navigator.clipboard?.writeText(value);
-      button.textContent = t("button.copied");
-      window.setTimeout(() => {
-        button.textContent = t("button.copy");
-      }, 1400);
-    });
-  });
 }
 
 function requiredElement<T extends Element = HTMLElement>(selector: string): T {

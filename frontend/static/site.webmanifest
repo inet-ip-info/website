@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "short_name": "",
+  "name": "inet-ip.info",
+  "short_name": "inet-ip.info",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
@@ -13,7 +13,7 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
+  "theme_color": "#080a08",
+  "background_color": "#080a08",
   "display": "standalone"
 }
