@@ -42,6 +42,17 @@ type DetailRow = {
   strong?: boolean;
 };
 
+type HomeViewState = {
+  currentIp: string;
+  inputValue: string;
+  resolvedTarget: string;
+  info: IpInfo | null;
+};
+
+type ViewTransitionDocument = Document & {
+  startViewTransition?: (callback: () => void) => unknown;
+};
+
 type CidrResult = {
   base: string;
   mask: string;
@@ -1050,6 +1061,12 @@ if (!appRoot) {
 
 const app: HTMLDivElement = appRoot;
 const page = (app.dataset.page ?? "home") as PageName;
+const homeViewState: HomeViewState = {
+  currentIp: "",
+  inputValue: "",
+  resolvedTarget: "",
+  info: null,
+};
 
 function markAppReady(): void {
   if (document.documentElement.classList.contains("app-ready")) return;
@@ -1059,6 +1076,21 @@ function markAppReady(): void {
       document.documentElement.classList.add("app-ready");
     });
   });
+}
+
+function renderPageForLocaleChange(): void {
+  const scrollX = window.scrollX;
+  const scrollY = window.scrollY;
+  const render = (): void => {
+    renderPage();
+    window.scrollTo(scrollX, scrollY);
+  };
+  const startViewTransition = (document as ViewTransitionDocument).startViewTransition;
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && startViewTransition) {
+    startViewTransition.call(document, render);
+    return;
+  }
+  render();
 }
 
 function renderShell(content: string): void {
@@ -1221,7 +1253,8 @@ function setupLanguageMenu(): void {
       } catch {
         // localStorage can be unavailable in strict privacy modes.
       }
-      renderPage();
+      closeMenu();
+      renderPageForLocaleChange();
     });
   });
 }
@@ -1493,28 +1526,37 @@ async function initHome(): Promise<void> {
   const input = requiredElement<HTMLInputElement>("#ipaddress");
   const currentButton = requiredElement<HTMLButtonElement>("#current-ip-button");
   const message = requiredElement<HTMLParagraphElement>("#lookup-message");
-  let currentIp = "";
+  let currentIp = homeViewState.currentIp;
+  input.value = homeViewState.inputValue;
 
   function setMessage(value: string): void {
     message.textContent = value;
     message.hidden = value === "";
   }
 
-  function update(info: IpInfo): void {
-    currentIp ||= info.ipAddress;
-    input.value = input.value || info.ipAddress;
-    setNavIp(currentIp);
-    requiredElement("#resolved-target").textContent = input.value || currentIp;
+  function update(info: IpInfo, options: { currentLookup?: boolean; inputValue?: string; resolvedTarget?: string } = {}): void {
+    if (options.currentLookup || currentIp === "") {
+      currentIp = info.ipAddress;
+    }
+    const nextInputValue = options.inputValue ?? (input.value || options.resolvedTarget || info.ipAddress);
+    const nextResolvedTarget = options.resolvedTarget ?? (nextInputValue || currentIp || info.ipAddress);
+
+    input.value = nextInputValue;
+    homeViewState.currentIp = currentIp;
+    homeViewState.inputValue = nextInputValue;
+    homeViewState.resolvedTarget = nextResolvedTarget;
+    homeViewState.info = info;
+
+    setNavIp(currentIp || info.ipAddress);
+    requiredElement("#resolved-target").textContent = nextResolvedTarget;
     requiredElement("#ip-display").textContent = info.ipAddress || t("message.unknown");
     requiredElement("#detail-table").innerHTML = renderRows(detailsFor(info));
     requiredElement("#location-table").innerHTML = renderRows(locationRowsFor(info));
     requiredElement("#map-label").textContent = hasUsableLocation(info) ? getName(info.city.Country?.Names) || "GeoIP" : "GeoIP";
     updateMapTarget(info);
     requiredElement("#license").innerHTML = licenseHtml();
-    renderCommandRows(currentIp);
+    renderCommandRows(currentIp || info.ipAddress);
   }
-
-  const readyFallback = window.setTimeout(markAppReady, 1200);
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1526,31 +1568,45 @@ async function initHome(): Promise<void> {
     }
     input.classList.remove("error");
     setMessage("");
+    homeViewState.inputValue = query;
     void fetchIpInfo(query)
-      .then(update)
+      .then((info) => update(info, { inputValue: query, resolvedTarget: query }))
       .catch(() => {
         setMessage(t("message.lookupFailed"));
       });
   });
 
   input.addEventListener("input", () => {
+    homeViewState.inputValue = input.value;
     input.classList.remove("error");
     setMessage("");
   });
 
   currentButton.addEventListener("click", () => {
     input.value = "";
+    homeViewState.inputValue = "";
     input.classList.remove("error");
     setMessage("");
     void fetchIpInfo()
-      .then(update)
+      .then((info) => update(info, { currentLookup: true, inputValue: info.ipAddress, resolvedTarget: info.ipAddress }))
       .catch(() => {
         setMessage(t("message.lookupFailed"));
       });
   });
 
+  if (homeViewState.info) {
+    update(homeViewState.info, {
+      inputValue: homeViewState.inputValue,
+      resolvedTarget: homeViewState.resolvedTarget,
+    });
+    markAppReady();
+    return;
+  }
+
+  const readyFallback = window.setTimeout(markAppReady, 1200);
+
   await fetchIpInfo()
-    .then(update)
+    .then((info) => update(info, { currentLookup: true }))
     .catch(() => {
       setMessage(t("message.lookupFailed"));
     })

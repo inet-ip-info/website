@@ -40,6 +40,12 @@ html.app-loading #app {
   opacity: 0;
 }
 
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 140ms;
+  animation-timing-function: ease-out;
+}
+
 button,
 input,
 textarea,
