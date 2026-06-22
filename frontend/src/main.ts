@@ -177,6 +177,7 @@ const translations = {
     "nav.playground": "CLI Playground",
     "nav.access": "Access Insights",
     "nav.currentIp": "Your IP",
+    "nav.menu": "Menu",
     "footer.summary": "Fast IPv4 lookup and curl-ready responses for server operators.",
     "home.lead": "Your information, as the internet sees it.",
     "home.text": "Fast IPv4 lookup, ASN, GeoIP and curl-ready responses for server operators.",
@@ -338,6 +339,7 @@ const translations = {
     "nav.playground": "CLI Playground",
     "nav.access": "Access Insights",
     "nav.currentIp": "Your IP",
+    "nav.menu": "メニュー",
     "footer.summary": "サーバー管理者向けの高速な IPv4 lookup と curl 対応レスポンス。",
     "home.lead": "インターネット越しに見えるあなたの情報",
     "home.text": "IPv4 lookup、ASN、GeoIP、curl 対応レスポンスを、サーバー管理者向けに高速に返します。",
@@ -1736,7 +1738,7 @@ function renderShell(content: string): void {
               <small>${escapeHtml(t("brand.subtitle"))}</small>
             </span>
           </a>
-          <div class="nav-links">
+          <div class="nav-links" id="primary-nav-links">
             ${navItems
               .map((item) => `<a class="${item.page === page ? "active" : ""}" href="${item.href}">${escapeHtml(t(item.labelKey))}</a>`)
               .join("")}
@@ -1773,6 +1775,18 @@ function renderShell(content: string): void {
                   .join("")}
               </div>
             </div>
+            <button
+              class="menu-button"
+              id="mobile-menu-button"
+              type="button"
+              aria-controls="primary-nav-links"
+              aria-expanded="false"
+              aria-label="${escapeHtml(t("nav.menu"))}"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
             <div class="nav-ip" id="nav-ip" hidden>
               <span>${escapeHtml(t("nav.currentIp"))}</span>
               <strong id="nav-ip-value"></strong>
@@ -1791,6 +1805,7 @@ function renderShell(content: string): void {
     </div>
   `;
   setupLanguageMenu();
+  setupMobileNavigation();
   void ensureNavIp();
 }
 
@@ -1885,6 +1900,73 @@ function setupLanguageMenu(): void {
       closeMenu();
       renderPageForLocaleChange();
     });
+  });
+}
+
+function setupMobileNavigation(): void {
+  const nav = document.querySelector<HTMLElement>(".site-nav");
+  const button = document.querySelector<HTMLButtonElement>("#mobile-menu-button");
+  const links = document.querySelector<HTMLDivElement>("#primary-nav-links");
+  if (!nav || !button || !links) return;
+  const siteNav = nav;
+  const menuButton = button;
+  const navLinks = links;
+
+  let keydownHandler: ((event: KeyboardEvent) => void) | null = null;
+  let pointerdownHandler: ((event: PointerEvent) => void) | null = null;
+
+  function closeMenu(): void {
+    if (!siteNav.classList.contains("menu-open")) return;
+    siteNav.classList.remove("menu-open");
+    menuButton.setAttribute("aria-expanded", "false");
+    if (keydownHandler) {
+      document.removeEventListener("keydown", keydownHandler);
+      keydownHandler = null;
+    }
+    if (pointerdownHandler) {
+      document.removeEventListener("pointerdown", pointerdownHandler, true);
+      pointerdownHandler = null;
+    }
+  }
+
+  function openMenu(): void {
+    if (siteNav.classList.contains("menu-open")) return;
+    siteNav.classList.add("menu-open");
+    menuButton.setAttribute("aria-expanded", "true");
+    keydownHandler = (event) => {
+      if (event.key === "Escape") {
+        closeMenu();
+        menuButton.focus();
+      }
+    };
+    pointerdownHandler = (event) => {
+      const target = event.target;
+      if (!(target instanceof Node) || !siteNav.contains(target)) {
+        closeMenu();
+      }
+    };
+    document.addEventListener("keydown", keydownHandler);
+    document.addEventListener("pointerdown", pointerdownHandler, true);
+  }
+
+  menuButton.addEventListener("click", () => {
+    if (siteNav.classList.contains("menu-open")) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  });
+
+  navLinks.addEventListener("click", (event) => {
+    const target = event.target;
+    if (target instanceof Element && target.closest("a")) {
+      closeMenu();
+    }
+  });
+
+  const mobileQuery = window.matchMedia("(max-width: 980px)");
+  mobileQuery.addEventListener("change", () => {
+    if (!mobileQuery.matches) closeMenu();
   });
 }
 
