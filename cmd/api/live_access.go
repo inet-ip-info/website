@@ -13,25 +13,18 @@ import (
 )
 
 const (
-	liveAccessRecentLimit      = 60
+	liveAccessRecentLimit      = 28
 	liveAccessDedupWindow      = 15 * time.Second
 	liveAccessClientBufferSize = 16
 )
 
 type liveAccessEvent struct {
-	ID             string  `json:"id"`
-	Timestamp      string  `json:"timestamp"`
-	Path           string  `json:"path,omitempty"`
-	CountryCode    string  `json:"countryCode,omitempty"`
-	CountryName    string  `json:"countryName,omitempty"`
-	City           string  `json:"city,omitempty"`
-	Subdivision    string  `json:"subdivision,omitempty"`
-	Label          string  `json:"label,omitempty"`
-	Latitude       float64 `json:"latitude"`
-	Longitude      float64 `json:"longitude"`
-	AccuracyRadius uint16  `json:"accuracyRadius,omitempty"`
-	ASN            uint    `json:"asn,omitempty"`
-	Organization   string  `json:"organization,omitempty"`
+	ID        uint64  `json:"id"`
+	Timestamp int64   `json:"ts"`
+	Label     string  `json:"label"`
+	Latitude  float64 `json:"lat"`
+	Longitude float64 `json:"lon"`
+	Network   string  `json:"network,omitempty"`
 }
 
 type LiveAccessHub struct {
@@ -84,9 +77,9 @@ func (h *LiveAccessHub) Allow(remoteIP string, now time.Time) bool {
 }
 
 func (h *LiveAccessHub) Publish(event liveAccessEvent) {
-	event.ID = fmt.Sprintf("%d", h.nextID.Add(1))
-	if event.Timestamp == "" {
-		event.Timestamp = time.Now().UTC().Format(time.RFC3339)
+	event.ID = h.nextID.Add(1)
+	if event.Timestamp == 0 {
+		event.Timestamp = time.Now().Unix()
 	}
 
 	h.mu.Lock()
@@ -115,8 +108,7 @@ func (h *Handler) trackLiveAccess(req *http.Request) {
 	if !h.liveAccess.Allow(remoteIP, now) {
 		return
 	}
-	path := liveAccessPathLabel(req.URL.Path)
-	go h.publishLiveAccess(remoteIP, path, now)
+	go h.publishLiveAccess(remoteIP, now)
 }
 
 func shouldTrackLiveAccess(req *http.Request) bool {
@@ -133,29 +125,19 @@ func shouldTrackLiveAccess(req *http.Request) bool {
 	return true
 }
 
-func liveAccessPathLabel(path string) string {
-	if path == "" {
-		return "/"
-	}
-	if strings.HasSuffix(path, ".html") {
-		return strings.TrimSuffix(path, ".html")
-	}
-	return path
-}
-
-func (h *Handler) publishLiveAccess(remoteIP, path string, now time.Time) {
+func (h *Handler) publishLiveAccess(remoteIP string, now time.Time) {
 	info, err := h.QueryIPinfo(remoteIP)
 	if err != nil {
 		return
 	}
-	event, ok := liveAccessEventFromInfo(info, path, now)
+	event, ok := liveAccessEventFromInfo(info, now)
 	if !ok {
 		return
 	}
 	h.liveAccess.Publish(event)
 }
 
-func liveAccessEventFromInfo(info info, path string, now time.Time) (liveAccessEvent, bool) {
+func liveAccessEventFromInfo(info info, now time.Time) (liveAccessEvent, bool) {
 	if info.City == nil || info.City.Location.AccuracyRadius == 0 {
 		return liveAccessEvent{}, false
 	}
@@ -178,22 +160,25 @@ func liveAccessEventFromInfo(info info, path string, now time.Time) (liveAccessE
 	}
 
 	event := liveAccessEvent{
-		Timestamp:      now.UTC().Format(time.RFC3339),
-		Path:           path,
-		CountryCode:    countryCode,
-		CountryName:    countryName,
-		City:           city,
-		Subdivision:    subdivision,
-		Label:          label,
-		Latitude:       info.City.Location.Latitude,
-		Longitude:      info.City.Location.Longitude,
-		AccuracyRadius: info.City.Location.AccuracyRadius,
+		Timestamp: now.UTC().Unix(),
+		Label:     label,
+		Latitude:  info.City.Location.Latitude,
+		Longitude: info.City.Location.Longitude,
 	}
 	if info.ASN != nil {
-		event.ASN = info.ASN.AutonomousSystemNumber
-		event.Organization = info.ASN.AutonomousSystemOrganization
+		event.Network = liveAccessNetworkLabel(info.ASN.AutonomousSystemOrganization, info.ASN.AutonomousSystemNumber)
 	}
 	return event, true
+}
+
+func liveAccessNetworkLabel(organization string, asn uint) string {
+	if asn == 0 {
+		return organization
+	}
+	if organization == "" {
+		return fmt.Sprintf("AS%d", asn)
+	}
+	return fmt.Sprintf("%s AS%d", organization, asn)
 }
 
 func nameFromGeoNames(names map[string]string) string {
@@ -249,7 +234,7 @@ func (h *Handler) writeAccessStream(w http.ResponseWriter, req *http.Request) {
 	events, recent, unsubscribe := h.liveAccess.Subscribe()
 	defer unsubscribe()
 
-	writeSSE(w, "ready", map[string]string{"status": "connected"})
+	writeReadySSE(w)
 	for _, event := range recent {
 		writeSSE(w, "access", event)
 	}
@@ -268,12 +253,16 @@ func (h *Handler) writeAccessStream(w http.ResponseWriter, req *http.Request) {
 			writeSSE(w, "access", event)
 			flusher.Flush()
 		case <-ticker.C:
-			if _, err := w.Write([]byte(": keep-alive\n\n")); err != nil {
+			if _, err := w.Write([]byte(":\n\n")); err != nil {
 				return
 			}
 			flusher.Flush()
 		}
 	}
+}
+
+func writeReadySSE(w http.ResponseWriter) {
+	fmt.Fprint(w, "event: ready\ndata:1\n\n")
 }
 
 func writeSSE(w http.ResponseWriter, eventName string, payload interface{}) {
