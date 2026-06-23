@@ -49,6 +49,29 @@ type HomeViewState = {
   info: IpInfo | null;
 };
 
+type LiveAccessStatus = "connecting" | "connected" | "reconnecting" | "preview" | "unavailable";
+
+type LiveAccessEvent = {
+  id?: string;
+  timestamp: string;
+  path?: string;
+  countryCode?: string;
+  countryName?: string;
+  city?: string;
+  subdivision?: string;
+  label?: string;
+  latitude: number;
+  longitude: number;
+  accuracyRadius?: number;
+  asn?: number;
+  organization?: string;
+};
+
+type LiveAccessState = {
+  status: LiveAccessStatus;
+  events: LiveAccessEvent[];
+};
+
 type ViewTransitionDocument = Document & {
   startViewTransition?: (callback: () => void) => unknown;
 };
@@ -199,6 +222,20 @@ const translations = {
     "home.signalCountry": "Country lookup",
     "home.signalLocation": "Location detail",
     "home.signalCurl": "curl-ready",
+    "home.liveTitle": "Live access map",
+    "home.liveText": "Near-real-time GeoIP signals from current site access.",
+    "home.liveStatusConnecting": "SSE connecting",
+    "home.liveStatusConnected": "SSE connected",
+    "home.liveStatusReconnecting": "SSE reconnecting",
+    "home.liveStatusPreview": "Preview stream",
+    "home.liveStatusUnavailable": "Stream unavailable",
+    "home.liveLegend": "Recent locations",
+    "home.liveFeed": "Recent access",
+    "home.liveFeedLocation": "Location",
+    "home.liveFeedAsn": "ISP / ASN",
+    "home.liveFeedTime": "Time",
+    "home.liveEmpty": "Waiting for live access",
+    "home.liveViewAll": "View access insights",
     "home.readableTitle": "What GeoIP reveals about access",
     "home.readableText":
       "Use location data as an operational hint for firewall policy, traffic review, and incident notes; it is not a precise host location.",
@@ -361,6 +398,20 @@ const translations = {
     "home.signalCountry": "国 lookup",
     "home.signalLocation": "位置情報",
     "home.signalCurl": "curl 対応",
+    "home.liveTitle": "Live access map",
+    "home.liveText": "現在のサイトアクセスを GeoIP 座標としてニアリアルタイムに表示します。",
+    "home.liveStatusConnecting": "SSE 接続中",
+    "home.liveStatusConnected": "SSE connected",
+    "home.liveStatusReconnecting": "SSE 再接続中",
+    "home.liveStatusPreview": "プレビュー表示",
+    "home.liveStatusUnavailable": "stream unavailable",
+    "home.liveLegend": "直近の地域",
+    "home.liveFeed": "Recent access",
+    "home.liveFeedLocation": "Location",
+    "home.liveFeedAsn": "ISP / ASN",
+    "home.liveFeedTime": "Time",
+    "home.liveEmpty": "ライブアクセス待ち",
+    "home.liveViewAll": "Access Insights を見る",
     "home.readableTitle": "GeoIP で見えてくるアクセスの背景",
     "home.readableText":
       "GeoIP は firewall policy、allowlist、インシデント調査を補助する情報であり、ホストの正確な位置を示すものではありません。",
@@ -1275,6 +1326,98 @@ const SAMPLE_INFO: IpInfo = {
     'This product includes GeoLite2 data created by MaxMind, available from <a href="https://www.maxmind.com">https://www.maxmind.com</a>.',
 };
 
+const SAMPLE_LIVE_ACCESS_EVENTS: LiveAccessEvent[] = [
+  {
+    id: "sample-tokyo",
+    timestamp: "2026-06-23T03:45:32Z",
+    path: "/",
+    countryCode: "JP",
+    countryName: "Japan",
+    city: "Tokyo",
+    subdivision: "Tokyo",
+    label: "Tokyo, JP",
+    latitude: 35.6895,
+    longitude: 139.6917,
+    accuracyRadius: 20,
+    asn: 2914,
+    organization: "NTT Communications",
+  },
+  {
+    id: "sample-ashburn",
+    timestamp: "2026-06-23T03:45:21Z",
+    path: "/json",
+    countryCode: "US",
+    countryName: "United States",
+    city: "Ashburn",
+    subdivision: "Virginia",
+    label: "Ashburn, US",
+    latitude: 39.0437,
+    longitude: -77.4875,
+    accuracyRadius: 50,
+    asn: 16509,
+    organization: "Amazon.com",
+  },
+  {
+    id: "sample-frankfurt",
+    timestamp: "2026-06-23T03:45:10Z",
+    path: "/access-insights",
+    countryCode: "DE",
+    countryName: "Germany",
+    city: "Frankfurt",
+    subdivision: "Hesse",
+    label: "Frankfurt, DE",
+    latitude: 50.1109,
+    longitude: 8.6821,
+    accuracyRadius: 20,
+    asn: 37062,
+    organization: "DE-CIX",
+  },
+  {
+    id: "sample-singapore",
+    timestamp: "2026-06-23T03:45:01Z",
+    path: "/ip",
+    countryCode: "SG",
+    countryName: "Singapore",
+    city: "Singapore",
+    label: "Singapore, SG",
+    latitude: 1.3521,
+    longitude: 103.8198,
+    accuracyRadius: 10,
+    asn: 16509,
+    organization: "Amazon.com",
+  },
+  {
+    id: "sample-sao-paulo",
+    timestamp: "2026-06-23T03:44:52Z",
+    path: "/IPv4byCountry",
+    countryCode: "BR",
+    countryName: "Brazil",
+    city: "Sao Paulo",
+    subdivision: "Sao Paulo",
+    label: "Sao Paulo, BR",
+    latitude: -23.5505,
+    longitude: -46.6333,
+    accuracyRadius: 50,
+    asn: 28669,
+    organization: "VIVO",
+  },
+  {
+    id: "sample-sydney",
+    timestamp: "2026-06-23T03:44:41Z",
+    path: "/playground",
+    countryCode: "AU",
+    countryName: "Australia",
+    city: "Sydney",
+    subdivision: "New South Wales",
+    label: "Sydney, AU",
+    latitude: -33.8688,
+    longitude: 151.2093,
+    accuracyRadius: 50,
+    asn: 1221,
+    organization: "Telstra",
+  },
+];
+
 const SAMPLE_ACCESS_24H_PERIOD: AccessPeriod = {
   id: "24h",
   label: "24h",
@@ -1695,8 +1838,14 @@ const homeViewState: HomeViewState = {
   resolvedTarget: "",
   info: null,
 };
+const liveAccessState: LiveAccessState = {
+  status: "connecting",
+  events: [...SAMPLE_LIVE_ACCESS_EVENTS],
+};
 let activeAccessPeriodId = "";
 let navIpInfoPromise: Promise<IpInfo> | null = null;
+let liveAccessSource: EventSource | null = null;
+let liveAccessPreviewTimer = 0;
 
 function markAppReady(): void {
   if (document.documentElement.classList.contains("app-ready")) return;
@@ -2176,8 +2325,7 @@ function renderHome(): void {
     <section class="home-hero">
       <div class="hero-grid">
         <div class="hero-copy">
-          <h1>inet-ip.info</h1>
-          <p class="hero-lead">${escapeHtml(t("home.lead"))}</p>
+          <h1>${escapeHtml(t("home.lead"))}</h1>
           <p class="hero-text">${escapeHtml(t("home.text"))}</p>
           <form class="lookup-control" id="lookup-form">
             <label for="ipaddress">${escapeHtml(t("home.lookupLabel"))}</label>
@@ -2194,6 +2342,7 @@ function renderHome(): void {
             <p class="validation" id="lookup-message" hidden></p>
           </form>
         </div>
+        ${renderLiveAccessPanel()}
         <section class="inspector-panel" aria-label="${escapeHtml(t("home.panelAria"))}">
           <div class="panel-topline">
             <span>${escapeHtml(t("home.resolvedTarget"))}</span>
@@ -2249,6 +2398,282 @@ function renderHome(): void {
   `);
 
   void initHome();
+  initLiveAccess();
+}
+
+function renderLiveAccessPanel(): string {
+  return `
+    <section class="live-access-panel" id="live-access-panel" aria-labelledby="live-access-title">
+      <div class="live-panel-header">
+        <div>
+          <h2 id="live-access-title">${escapeHtml(t("home.liveTitle"))}</h2>
+          <p>${escapeHtml(t("home.liveText"))}</p>
+        </div>
+        <span class="live-status" id="live-access-status" data-status="${escapeHtml(liveAccessState.status)}">
+          ${renderLiveAccessStatus(liveAccessState.status)}
+        </span>
+      </div>
+      <div class="location-map live-access-map" id="live-access-map" aria-label="${escapeHtml(t("home.liveTitle"))}">
+        ${renderLiveAccessMapContent()}
+      </div>
+      <div class="live-feed" id="live-access-feed">
+        ${renderLiveAccessFeed()}
+      </div>
+      <a class="live-feed-link" href="/access-insights">
+        <span>${escapeHtml(t("home.liveViewAll"))}</span>
+        <strong aria-hidden="true">›</strong>
+      </a>
+    </section>
+  `;
+}
+
+function renderLiveAccessStatus(status: LiveAccessStatus): string {
+  return `<span aria-hidden="true"></span><strong>${escapeHtml(liveAccessStatusLabel(status))}</strong>`;
+}
+
+function liveAccessStatusLabel(status: LiveAccessStatus): string {
+  if (status === "connected") return t("home.liveStatusConnected");
+  if (status === "reconnecting") return t("home.liveStatusReconnecting");
+  if (status === "preview") return t("home.liveStatusPreview");
+  if (status === "unavailable") return t("home.liveStatusUnavailable");
+  return t("home.liveStatusConnecting");
+}
+
+function renderLiveAccessMapContent(): string {
+  const mapEvents = liveAccessState.events.filter(hasLiveAccessCoordinates).slice(0, 28);
+  const markers = mapEvents
+    .map((event, index) => {
+      const point = liveAccessPoint(event);
+      const recency = Math.max(0, 1 - index / Math.max(1, mapEvents.length));
+      const size = 11 + recency * 11;
+      const markerTone = index % 3;
+      return `
+        <span
+          class="live-map-marker tone-${markerTone}"
+          style="left: ${point.x.toFixed(3)}%; top: ${point.y.toFixed(3)}%; width: ${size.toFixed(1)}px; height: ${size.toFixed(
+            1,
+          )}px; --pulse-delay: ${Math.min(index * 130, 1200)}ms; opacity: ${(0.48 + recency * 0.5).toFixed(2)}"
+          title="${escapeHtml(`${liveAccessLocation(event)} ${liveAccessAsnLabel(event)}`)}"
+        ></span>
+      `;
+    })
+    .join("");
+
+  const legendItems = mapEvents
+    .slice(0, 3)
+    .map(
+      (event, index) => `
+        <span><i class="tone-${index % 3}" aria-hidden="true"></i>${escapeHtml(liveAccessLocation(event))}</span>
+      `,
+    )
+    .join("");
+
+  return `
+    ${renderWorldMap()}
+    ${renderLiveAccessArcs(mapEvents.slice(0, 6))}
+    ${markers}
+    <div class="live-map-legend" ${legendItems === "" ? "hidden" : ""}>
+      <strong>${escapeHtml(t("home.liveLegend"))}</strong>
+      ${legendItems}
+    </div>
+    <small>Made with Natural Earth.</small>
+  `;
+}
+
+function renderLiveAccessArcs(events: LiveAccessEvent[]): string {
+  if (events.length < 2) return "";
+  const anchor = liveAccessPoint(events[0]);
+  const paths = events
+    .slice(1)
+    .map((event, index) => {
+      const point = liveAccessPoint(event);
+      const midX = (anchor.x + point.x) / 2;
+      const midY = Math.max(8, Math.min(anchor.y, point.y) - 14 - index * 2);
+      return `<path d="M ${point.x.toFixed(2)} ${point.y.toFixed(2)} Q ${midX.toFixed(2)} ${midY.toFixed(2)} ${anchor.x.toFixed(
+        2,
+      )} ${anchor.y.toFixed(2)}"></path>`;
+    })
+    .join("");
+  return `
+    <svg class="live-map-arcs" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      ${paths}
+    </svg>
+  `;
+}
+
+function renderLiveAccessFeed(): string {
+  const rows = liveAccessState.events.filter(hasLiveAccessCoordinates).slice(0, 5);
+  if (rows.length === 0) {
+    return `<p class="live-feed-empty">${escapeHtml(t("home.liveEmpty"))}</p>`;
+  }
+  return `
+    <h3 class="live-feed-title">${escapeHtml(t("home.liveFeed"))}</h3>
+    <div class="live-feed-head" aria-hidden="true">
+      <span>${escapeHtml(t("home.liveFeedLocation"))}</span>
+      <span>${escapeHtml(t("home.liveFeedAsn"))}</span>
+      <span>${escapeHtml(t("home.liveFeedTime"))}</span>
+    </div>
+    ${rows
+      .map(
+        (event, index) => `
+          <article class="live-feed-row">
+            <strong><i class="tone-${index % 3}" aria-hidden="true"></i>${escapeHtml(liveAccessLocation(event))}</strong>
+            <span>${escapeHtml(liveAccessAsnLabel(event))}</span>
+            <time datetime="${escapeHtml(event.timestamp)}">${escapeHtml(formatLiveAccessTime(event.timestamp))}</time>
+          </article>
+        `,
+      )
+      .join("")}
+  `;
+}
+
+function initLiveAccess(): void {
+  stopLiveAccessStream();
+  if (isStaticFrontendPreview() || typeof EventSource === "undefined") {
+    startLiveAccessPreview();
+    return;
+  }
+
+  liveAccessState.status = "connecting";
+  updateLiveAccessPanel();
+  const source = new EventSource("/access-stream");
+  liveAccessSource = source;
+
+  source.addEventListener("open", () => {
+    liveAccessState.status = "connected";
+    updateLiveAccessPanel();
+  });
+  source.addEventListener("ready", () => {
+    liveAccessState.status = "connected";
+    updateLiveAccessPanel();
+  });
+  source.addEventListener("access", (message) => {
+    const event = parseLiveAccessEvent(message);
+    if (!event) return;
+    liveAccessState.status = "connected";
+    addLiveAccessEvent(event);
+    updateLiveAccessPanel();
+  });
+  source.addEventListener("error", () => {
+    liveAccessState.status = liveAccessState.events.length > 0 ? "reconnecting" : "unavailable";
+    updateLiveAccessPanel();
+  });
+}
+
+function stopLiveAccessStream(): void {
+  if (liveAccessSource) {
+    liveAccessSource.close();
+    liveAccessSource = null;
+  }
+  if (liveAccessPreviewTimer !== 0) {
+    window.clearInterval(liveAccessPreviewTimer);
+    liveAccessPreviewTimer = 0;
+  }
+}
+
+function startLiveAccessPreview(): void {
+  liveAccessState.status = "preview";
+  liveAccessState.events = SAMPLE_LIVE_ACCESS_EVENTS.map((event, index) => ({
+    ...event,
+    id: `preview-seed-${index}`,
+    timestamp: new Date(Date.now() - index * 11000).toISOString(),
+  }));
+  updateLiveAccessPanel();
+  let nextIndex = 0;
+  liveAccessPreviewTimer = window.setInterval(() => {
+    const template = SAMPLE_LIVE_ACCESS_EVENTS[nextIndex % SAMPLE_LIVE_ACCESS_EVENTS.length];
+    nextIndex += 1;
+    addLiveAccessEvent({
+      ...template,
+      id: `preview-${Date.now()}-${nextIndex}`,
+      timestamp: new Date().toISOString(),
+    });
+    updateLiveAccessPanel();
+  }, 2600);
+}
+
+function parseLiveAccessEvent(message: Event): LiveAccessEvent | null {
+  if (!(message instanceof MessageEvent)) return null;
+  try {
+    const value = JSON.parse(message.data) as Partial<LiveAccessEvent>;
+    const latitude = value.latitude;
+    const longitude = value.longitude;
+    if (
+      typeof latitude !== "number" ||
+      typeof longitude !== "number" ||
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      !value.timestamp
+    ) {
+      return null;
+    }
+    return {
+      timestamp: value.timestamp,
+      id: value.id,
+      path: value.path,
+      countryCode: value.countryCode,
+      countryName: value.countryName,
+      city: value.city,
+      subdivision: value.subdivision,
+      label: value.label,
+      latitude,
+      longitude,
+      accuracyRadius: value.accuracyRadius,
+      asn: value.asn,
+      organization: value.organization,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function addLiveAccessEvent(event: LiveAccessEvent): void {
+  if (event.id && liveAccessState.events.some((item) => item.id === event.id)) return;
+  liveAccessState.events = [event, ...liveAccessState.events.filter((item) => item.id !== event.id)].slice(0, 40);
+}
+
+function updateLiveAccessPanel(): void {
+  const status = document.querySelector<HTMLElement>("#live-access-status");
+  const map = document.querySelector<HTMLElement>("#live-access-map");
+  const feed = document.querySelector<HTMLElement>("#live-access-feed");
+  if (!status || !map || !feed) return;
+  status.dataset.status = liveAccessState.status;
+  status.innerHTML = renderLiveAccessStatus(liveAccessState.status);
+  map.innerHTML = renderLiveAccessMapContent();
+  feed.innerHTML = renderLiveAccessFeed();
+}
+
+function hasLiveAccessCoordinates(event: LiveAccessEvent): boolean {
+  return Number.isFinite(event.latitude) && Number.isFinite(event.longitude);
+}
+
+function liveAccessPoint(event: LiveAccessEvent): { x: number; y: number } {
+  return {
+    x: clamp(((event.longitude + 180) / 360) * 100, 0, 100),
+    y: clamp(((90 - event.latitude) / 180) * 100, 0, 100),
+  };
+}
+
+function liveAccessLocation(event: LiveAccessEvent): string {
+  if (event.label) return event.label;
+  const place = event.city || event.subdivision || event.countryName || "";
+  return [place, event.countryCode].filter(Boolean).join(", ") || t("message.unknown");
+}
+
+function liveAccessAsnLabel(event: LiveAccessEvent): string {
+  const asn = event.asn && event.asn > 0 ? `AS${event.asn}` : "";
+  return [event.organization, asn].filter(Boolean).join(" ") || t("message.unknown");
+}
+
+function formatLiveAccessTime(timestamp: string): string {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "--:--:--";
+  return new Intl.DateTimeFormat(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(date);
 }
 
 async function initHome(): Promise<void> {
@@ -3195,6 +3620,9 @@ function requiredElement<T extends Element = HTMLElement>(selector: string): T {
 }
 
 function renderPage(): void {
+  if (page !== "home") {
+    stopLiveAccessStream();
+  }
   if (page === "home") {
     renderHome();
     return;
