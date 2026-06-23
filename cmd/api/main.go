@@ -49,6 +49,7 @@ type Handler struct {
 	vfs                fs.FS
 	htmls              map[string]bool
 	accessInsightsFile string
+	liveAccess         *LiveAccessHub
 }
 
 func isUAofCLI(uas []string) bool {
@@ -78,6 +79,7 @@ func dumpJSON(v interface{}) []byte {
 }
 
 func (h *Handler) writeJSON(w http.ResponseWriter, req *http.Request) {
+	h.trackLiveAccess(req)
 	var ip string
 	switch req.Method {
 	case http.MethodGet:
@@ -108,9 +110,11 @@ func (h *Handler) writeJSON(w http.ResponseWriter, req *http.Request) {
 	w.Write(dumpJSON(res))
 }
 func (h *Handler) writeIP(w http.ResponseWriter, req *http.Request) {
+	h.trackLiveAccess(req)
 	io.WriteString(w, getIp(req))
 }
 func (h *Handler) writeIPrn(w http.ResponseWriter, req *http.Request) {
+	h.trackLiveAccess(req)
 	io.WriteString(w, getIp(req)+"\n")
 }
 func (h *Handler) writeHTML(w http.ResponseWriter, req *http.Request) {
@@ -127,6 +131,7 @@ func (h *Handler) writeOtherPath(w http.ResponseWriter, req *http.Request) {
 	dir := req.URL.Path
 	//log.Printf("req.URL:%s", dumpJSON(req.URL))
 	if dir == "" || dir == "/" {
+		h.trackLiveAccess(req)
 		h.writeHTML(w, req)
 		return
 	}
@@ -134,12 +139,14 @@ func (h *Handler) writeOtherPath(w http.ResponseWriter, req *http.Request) {
 		dir = dir + ".html"
 	}
 	if _, ok := h.htmls[strings.TrimPrefix(dir, "/")]; ok {
+		h.trackLiveAccess(req)
 		req.URL.Path = dir
 	}
 	h.writeHTML(w, req)
 }
 
 func (h *Handler) writeAccessInsights(w http.ResponseWriter, req *http.Request) {
+	h.trackLiveAccess(req)
 	if req.Method != http.MethodGet && req.Method != http.MethodHead {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -199,6 +206,7 @@ func main() {
 		vfs:                vfs,
 		htmls:              map[string]bool{},
 		accessInsightsFile: c.AccessInsightsFile,
+		liveAccess:         NewLiveAccessHub(),
 	}
 	for _, html := range htmls {
 		h.htmls[html] = true
@@ -213,6 +221,7 @@ func main() {
 	http.HandleFunc("/json", h.writeJSON)
 	http.HandleFunc("/ip", h.writeIP)
 	http.HandleFunc("/ip/", h.writeIP)
+	http.HandleFunc("/access-stream", h.writeAccessStream)
 	http.HandleFunc("/access-insights.json", h.writeAccessInsights)
 	http.HandleFunc("/", h.root)
 	log.Printf("ListenAndServe: %s", c.ListenAddr)

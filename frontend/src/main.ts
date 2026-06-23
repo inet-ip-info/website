@@ -49,6 +49,28 @@ type HomeViewState = {
   info: IpInfo | null;
 };
 
+type LiveAccessStatus = "connecting" | "connected" | "reconnecting" | "preview" | "unavailable";
+
+type LiveAccessEvent = {
+  id?: string;
+  timestamp: string;
+  countryCode?: string;
+  countryName?: string;
+  city?: string;
+  subdivision?: string;
+  label?: string;
+  latitude: number;
+  longitude: number;
+  asn?: number;
+  organization?: string;
+  network?: string;
+};
+
+type LiveAccessState = {
+  status: LiveAccessStatus;
+  events: LiveAccessEvent[];
+};
+
 type ViewTransitionDocument = Document & {
   startViewTransition?: (callback: () => void) => unknown;
 };
@@ -179,8 +201,9 @@ const translations = {
     "nav.currentIp": "Your IP",
     "nav.menu": "Menu",
     "footer.summary": "Fast IPv4 lookup and curl-ready responses for server operators.",
-    "home.lead": "Your information, as the internet sees it.",
+    "home.lead": "IPv4 lookup for server operators",
     "home.text": "Fast IPv4 lookup, ASN, GeoIP and curl-ready responses for server operators.",
+    "home.yourIpAddress": "Your IP Address",
     "home.lookupLabel": "IPv4 Lookup",
     "home.lookupPlaceholder": "IPv4 address",
     "home.lookupButton": "Inspect IP",
@@ -190,6 +213,7 @@ const translations = {
     "home.resolvedTarget": "Resolved target",
     "home.resolving": "Resolving...",
     "home.ipAddress": "IP address",
+    "home.asnOrganization": "ASN / Organization",
     "home.lookupCoverage": "Lookup coverage",
     "home.signalAsn": "ASN",
     "home.signalGeoip": "GeoIP",
@@ -199,6 +223,19 @@ const translations = {
     "home.signalCountry": "Country lookup",
     "home.signalLocation": "Location detail",
     "home.signalCurl": "curl-ready",
+    "home.liveTitle": "Live access map",
+    "home.liveText": "Near-real-time GeoIP signals from current site access.",
+    "home.liveStatusConnecting": "Connecting",
+    "home.liveStatusConnected": "Connected",
+    "home.liveStatusReconnecting": "Reconnecting",
+    "home.liveStatusPreview": "Preview stream",
+    "home.liveStatusUnavailable": "Stream unavailable",
+    "home.liveFeed": "Recent Access",
+    "home.liveFeedLocation": "Location",
+    "home.liveFeedAsn": "ISP / ASN",
+    "home.liveFeedTime": "Time",
+    "home.liveEmpty": "Waiting for live access",
+    "home.liveViewAll": "View access insights",
     "home.readableTitle": "What GeoIP reveals about access",
     "home.readableText":
       "Use location data as an operational hint for firewall policy, traffic review, and incident notes; it is not a precise host location.",
@@ -227,8 +264,6 @@ const translations = {
     "detail.longitude": "Longitude",
     "detail.metroCode": "Metro code",
     "geoip.source": "Data source",
-    "geoip.operatorUse": "Use cases",
-    "geoip.operatorUseValue": "Policy decisions, allowlist checks, and clues for incident investigation",
     "message.lookupFailed": "Lookup failed. Please retry or check the API response.",
     "message.invalidIpv4": "Valid IPv4 address is required.",
     "message.unknown": "Unknown",
@@ -341,8 +376,9 @@ const translations = {
     "nav.currentIp": "Your IP",
     "nav.menu": "メニュー",
     "footer.summary": "サーバー管理者向けの高速な IPv4 lookup と curl 対応レスポンス。",
-    "home.lead": "インターネット越しに見えるあなたの情報",
+    "home.lead": "サーバー管理者向け IPv4 lookup",
     "home.text": "IPv4 lookup、ASN、GeoIP、curl 対応レスポンスを、サーバー管理者向けに高速に返します。",
+    "home.yourIpAddress": "あなたの IP アドレス",
     "home.lookupLabel": "IPv4 Lookup",
     "home.lookupPlaceholder": "IPv4 アドレス",
     "home.lookupButton": "IP を確認",
@@ -352,6 +388,7 @@ const translations = {
     "home.resolvedTarget": "Resolved target",
     "home.resolving": "解決中...",
     "home.ipAddress": "IP アドレス",
+    "home.asnOrganization": "ASN / Organization",
     "home.lookupCoverage": "Lookup coverage",
     "home.signalAsn": "ASN",
     "home.signalGeoip": "GeoIP",
@@ -361,6 +398,19 @@ const translations = {
     "home.signalCountry": "国 lookup",
     "home.signalLocation": "位置情報",
     "home.signalCurl": "curl 対応",
+    "home.liveTitle": "Live access map",
+    "home.liveText": "現在のサイトアクセスを GeoIP 座標としてリアルタイムに表示します。",
+    "home.liveStatusConnecting": "接続中",
+    "home.liveStatusConnected": "Connected",
+    "home.liveStatusReconnecting": "再接続中",
+    "home.liveStatusPreview": "プレビュー表示",
+    "home.liveStatusUnavailable": "stream unavailable",
+    "home.liveFeed": "Recent Access",
+    "home.liveFeedLocation": "Location",
+    "home.liveFeedAsn": "ISP / ASN",
+    "home.liveFeedTime": "Time",
+    "home.liveEmpty": "ライブアクセス待ち",
+    "home.liveViewAll": "Access Insights を見る",
     "home.readableTitle": "GeoIP で見えてくるアクセスの背景",
     "home.readableText":
       "GeoIP は firewall policy、allowlist、インシデント調査を補助する情報であり、ホストの正確な位置を示すものではありません。",
@@ -389,8 +439,6 @@ const translations = {
     "detail.longitude": "経度",
     "detail.metroCode": "Metro code",
     "geoip.source": "データソース",
-    "geoip.operatorUse": "活用例",
-    "geoip.operatorUseValue": "ポリシー判断、allowlist の確認、インシデント調査の手がかりに",
     "message.lookupFailed": "lookup に失敗しました。再試行するか API レスポンスを確認してください。",
     "message.invalidIpv4": "有効な IPv4 アドレスを入力してください。",
     "message.unknown": "不明",
@@ -498,7 +546,7 @@ const translations = {
     "nav.playground": "CLI Playground",
     "nav.currentIp": "你的 IP",
     "footer.summary": "为服务器管理员提供快速 IPv4 查询和 curl 友好响应。",
-    "home.lead": "互联网另一端看到的，你的信息。",
+    "home.lead": "面向服务器管理员的 IPv4 查询",
     "home.text": "为服务器管理员快速返回 IPv4 查询、ASN、GeoIP 和 curl 友好响应。",
     "home.lookupLabel": "IPv4 查询",
     "home.lookupPlaceholder": "IPv4 地址",
@@ -544,8 +592,6 @@ const translations = {
     "detail.longitude": "经度",
     "detail.metroCode": "Metro code",
     "geoip.source": "数据源",
-    "geoip.operatorUse": "应用示例",
-    "geoip.operatorUseValue": "策略判断、allowlist 复核，以及事件调查的线索",
     "message.lookupFailed": "查询失败。请重试或检查 API 响应。",
     "message.invalidIpv4": "请输入有效的 IPv4 地址。",
     "message.unknown": "未知",
@@ -610,7 +656,7 @@ const translations = {
     "nav.playground": "CLI Playground",
     "nav.currentIp": "내 IP",
     "footer.summary": "서버 운영자를 위한 빠른 IPv4 조회와 curl 친화 응답.",
-    "home.lead": "인터넷 너머에서 보이는, 당신의 정보.",
+    "home.lead": "서버 운영자를 위한 IPv4 조회",
     "home.text": "서버 운영자를 위해 IPv4 조회, ASN, GeoIP, curl 친화 응답을 빠르게 제공합니다.",
     "home.lookupLabel": "IPv4 조회",
     "home.lookupPlaceholder": "IPv4 주소",
@@ -657,8 +703,6 @@ const translations = {
     "detail.longitude": "경도",
     "detail.metroCode": "Metro code",
     "geoip.source": "데이터 소스",
-    "geoip.operatorUse": "활용 예시",
-    "geoip.operatorUseValue": "정책 판단, allowlist 확인, 인시던트 조사의 단서로",
     "message.lookupFailed": "조회에 실패했습니다. 다시 시도하거나 API 응답을 확인하세요.",
     "message.invalidIpv4": "유효한 IPv4 주소가 필요합니다.",
     "message.unknown": "알 수 없음",
@@ -724,7 +768,7 @@ const translations = {
     "nav.playground": "CLI Playground",
     "nav.currentIp": "Tu IP",
     "footer.summary": "Consulta IPv4 rápida y respuestas listas para curl para administradores de servidores.",
-    "home.lead": "Tu información, tal como la ve internet.",
+    "home.lead": "Consulta IPv4 para administradores de servidores",
     "home.text": "Consulta IPv4 rápida, ASN, GeoIP y respuestas listas para curl para administradores de servidores.",
     "home.lookupLabel": "Consulta IPv4",
     "home.lookupPlaceholder": "Dirección IPv4",
@@ -772,8 +816,6 @@ const translations = {
     "detail.longitude": "Longitud",
     "detail.metroCode": "Código metro",
     "geoip.source": "Fuente de datos",
-    "geoip.operatorUse": "Casos de uso",
-    "geoip.operatorUseValue": "Decisiones de política, revisión de allowlist y pistas para investigar incidentes",
     "message.lookupFailed": "La consulta falló. Reintente o revise la respuesta de la API.",
     "message.invalidIpv4": "Se requiere una dirección IPv4 válida.",
     "message.unknown": "Desconocido",
@@ -841,7 +883,7 @@ const translations = {
     "nav.playground": "CLI Playground",
     "nav.currentIp": "Votre IP",
     "footer.summary": "Recherche IPv4 rapide et réponses prêtes pour curl pour les administrateurs serveur.",
-    "home.lead": "Vos informations, telles qu'internet les voit.",
+    "home.lead": "Recherche IPv4 pour administrateurs serveur",
     "home.text": "Recherche IPv4 rapide, ASN, GeoIP et réponses prêtes pour curl pour les administrateurs serveur.",
     "home.lookupLabel": "Recherche IPv4",
     "home.lookupPlaceholder": "Adresse IPv4",
@@ -890,8 +932,6 @@ const translations = {
     "detail.longitude": "Longitude",
     "detail.metroCode": "Code métro",
     "geoip.source": "Source des données",
-    "geoip.operatorUse": "Cas d'usage",
-    "geoip.operatorUseValue": "Décisions de politique, vérification d'allowlist et indices pour l'investigation d'incidents",
     "message.lookupFailed": "La recherche a échoué. Réessayez ou vérifiez la réponse de l'API.",
     "message.invalidIpv4": "Une adresse IPv4 valide est requise.",
     "message.unknown": "Inconnu",
@@ -960,7 +1000,7 @@ const translations = {
     "nav.playground": "CLI Playground",
     "nav.currentIp": "Ihre IP",
     "footer.summary": "Schneller IPv4 Lookup und curl-freundliche Antworten für Serveradministratoren.",
-    "home.lead": "Ihre Informationen, so wie das Internet sie sieht.",
+    "home.lead": "IPv4 Lookup für Serveradministratoren",
     "home.text": "Schneller IPv4 Lookup, ASN, GeoIP und curl-freundliche Antworten für Serveradministratoren.",
     "home.lookupLabel": "IPv4 Lookup",
     "home.lookupPlaceholder": "IPv4 Adresse",
@@ -1008,8 +1048,6 @@ const translations = {
     "detail.longitude": "Längengrad",
     "detail.metroCode": "Metro-Code",
     "geoip.source": "Datenquelle",
-    "geoip.operatorUse": "Anwendungsbeispiele",
-    "geoip.operatorUseValue": "Policy-Entscheidungen, Allowlist-Prüfung und Hinweise für die Incident-Untersuchung",
     "message.lookupFailed": "Lookup fehlgeschlagen. Bitte erneut versuchen oder API-Antwort prüfen.",
     "message.invalidIpv4": "Eine gültige IPv4-Adresse ist erforderlich.",
     "message.unknown": "Unbekannt",
@@ -1078,7 +1116,7 @@ const translations = {
     "nav.playground": "CLI Playground",
     "nav.currentIp": "Seu IP",
     "footer.summary": "Consulta IPv4 rápida e respostas prontas para curl para administradores de servidores.",
-    "home.lead": "Suas informações, como a internet as vê.",
+    "home.lead": "Consulta IPv4 para administradores de servidores",
     "home.text": "Consulta IPv4 rápida, ASN, GeoIP e respostas prontas para curl para administradores de servidores.",
     "home.lookupLabel": "Consulta IPv4",
     "home.lookupPlaceholder": "Endereço IPv4",
@@ -1125,8 +1163,6 @@ const translations = {
     "detail.longitude": "Longitude",
     "detail.metroCode": "Código metro",
     "geoip.source": "Fonte de dados",
-    "geoip.operatorUse": "Casos de uso",
-    "geoip.operatorUseValue": "Decisões de política, verificação de allowlist e pistas para investigação de incidentes",
     "message.lookupFailed": "A consulta falhou. Tente novamente ou verifique a resposta da API.",
     "message.invalidIpv4": "É necessário um endereço IPv4 válido.",
     "message.unknown": "Desconhecido",
@@ -1274,6 +1310,57 @@ const SAMPLE_INFO: IpInfo = {
   license:
     'This product includes GeoLite2 data created by MaxMind, available from <a href="https://www.maxmind.com">https://www.maxmind.com</a>.',
 };
+
+const SAMPLE_LIVE_ACCESS_EVENTS: LiveAccessEvent[] = [
+  {
+    id: "sample-tokyo",
+    timestamp: "2026-06-23T03:45:32Z",
+    label: "Tokyo, JP",
+    latitude: 35.6895,
+    longitude: 139.6917,
+    network: "NTT Communications AS2914",
+  },
+  {
+    id: "sample-ashburn",
+    timestamp: "2026-06-23T03:45:21Z",
+    label: "Ashburn, US",
+    latitude: 39.0437,
+    longitude: -77.4875,
+    network: "Amazon.com AS16509",
+  },
+  {
+    id: "sample-frankfurt",
+    timestamp: "2026-06-23T03:45:10Z",
+    label: "Frankfurt, DE",
+    latitude: 50.1109,
+    longitude: 8.6821,
+    network: "DE-CIX AS37062",
+  },
+  {
+    id: "sample-singapore",
+    timestamp: "2026-06-23T03:45:01Z",
+    label: "Singapore, SG",
+    latitude: 1.3521,
+    longitude: 103.8198,
+    network: "Amazon.com AS16509",
+  },
+  {
+    id: "sample-sao-paulo",
+    timestamp: "2026-06-23T03:44:52Z",
+    label: "Sao Paulo, BR",
+    latitude: -23.5505,
+    longitude: -46.6333,
+    network: "VIVO AS28669",
+  },
+  {
+    id: "sample-sydney",
+    timestamp: "2026-06-23T03:44:41Z",
+    label: "Sydney, AU",
+    latitude: -33.8688,
+    longitude: 151.2093,
+    network: "Telstra AS1221",
+  },
+];
 
 const SAMPLE_ACCESS_24H_PERIOD: AccessPeriod = {
   id: "24h",
@@ -1695,8 +1782,14 @@ const homeViewState: HomeViewState = {
   resolvedTarget: "",
   info: null,
 };
+const liveAccessState: LiveAccessState = {
+  status: "connecting",
+  events: [...SAMPLE_LIVE_ACCESS_EVENTS],
+};
 let activeAccessPeriodId = "";
 let navIpInfoPromise: Promise<IpInfo> | null = null;
+let liveAccessSource: EventSource | null = null;
+let liveAccessPreviewTimer = 0;
 
 function markAppReady(): void {
   if (document.documentElement.classList.contains("app-ready")) return;
@@ -2116,26 +2209,17 @@ function renderRows(rows: DetailRow[]): string {
     .join("");
 }
 
-function detailsFor(info: IpInfo): DetailRow[] {
+function homeDetailsFor(info: IpInfo): DetailRow[] {
   const country = getName(info.city.Country?.Names);
-  const representedCountry = getName(info.city.RepresentedCountry?.Names);
-  const registeredCountry = getName(info.city.RegisteredCountry?.Names);
   const subdivisions =
     info.city.Subdivisions?.map((item) => getName(item.Names))
       .filter(Boolean)
       .join(", ") ?? "";
+  const asn = info.asn.AutonomousSystemNumber > 0 ? `AS${info.asn.AutonomousSystemNumber}` : "";
   return [
-    {
-      label: "AS",
-      value: info.asn.AutonomousSystemNumber > 0 ? `AS${info.asn.AutonomousSystemNumber}` : "",
-    },
-    { label: t("detail.organization"), value: info.asn.AutonomousSystemOrganization },
-    { label: t("detail.continent"), value: getName(info.city.Continent?.Names) },
+    { label: t("home.asnOrganization"), value: [asn, info.asn.AutonomousSystemOrganization].filter(Boolean).join(" ") },
     { label: t("detail.country"), value: [country, info.city.Country?.IsoCode].filter(Boolean).join(" / ") },
-    { label: t("detail.representedCountry"), value: representedCountry !== country ? representedCountry : "" },
-    { label: t("detail.registeredCountry"), value: registeredCountry !== country ? registeredCountry : "" },
-    { label: t("detail.subdivision"), value: subdivisions },
-    { label: t("detail.city"), value: getName(info.city.City?.Names) },
+    { label: t("detail.subdivision"), value: [subdivisions, getName(info.city.City?.Names)].filter(Boolean).join(" / ") },
     { label: t("detail.timezone"), value: info.city.Location?.TimeZone ?? "" },
   ];
 }
@@ -2150,7 +2234,6 @@ function locationRowsFor(info: IpInfo): DetailRow[] {
     { label: t("detail.accuracyRadius"), value: `${location.AccuracyRadius} km` },
     { label: t("detail.coordinates"), value: coordinates },
     { label: t("geoip.source"), value: "MaxMind GeoLite2" },
-    { label: t("geoip.operatorUse"), value: t("geoip.operatorUseValue") },
   ];
 }
 
@@ -2179,46 +2262,51 @@ function renderHome(): void {
           <h1>inet-ip.info</h1>
           <p class="hero-lead">${escapeHtml(t("home.lead"))}</p>
           <p class="hero-text">${escapeHtml(t("home.text"))}</p>
-          <form class="lookup-control" id="lookup-form">
-            <label for="ipaddress">${escapeHtml(t("home.lookupLabel"))}</label>
-            <div class="lookup-line">
-              <input id="ipaddress" type="text" inputmode="decimal" autocomplete="off" placeholder="${escapeHtml(
-                t("home.lookupPlaceholder"),
-              )}" />
-              <button type="submit">${escapeHtml(t("home.lookupButton"))}</button>
-            </div>
-            <div class="lookup-actions">
-              <button type="button" id="current-ip-button">${escapeHtml(t("home.currentIpButton"))}</button>
-              <a href="#cli">${escapeHtml(t("home.viewCli"))}</a>
-            </div>
-            <p class="validation" id="lookup-message" hidden></p>
-          </form>
         </div>
-        <section class="inspector-panel" aria-label="${escapeHtml(t("home.panelAria"))}">
-          <div class="panel-topline">
-            <span>${escapeHtml(t("home.resolvedTarget"))}</span>
-          </div>
-          <div class="ip-display">
-            <span>${escapeHtml(t("home.ipAddress"))}</span>
-            <strong id="ip-display">${escapeHtml(t("home.resolving"))}</strong>
-          </div>
-          <div class="detail-table" id="detail-table"></div>
-          <p class="license" id="license"></p>
-        </section>
-      </div>
-    </section>
-    <section class="content-section location-section">
-      <div class="section-heading">
-        <h2>${escapeHtml(t("home.readableTitle"))}</h2>
-        <p>${escapeHtml(t("home.readableText"))}</p>
-      </div>
-      <div class="location-grid">
-        <div class="location-map" aria-hidden="true">
-          ${renderWorldMap()}
-          <span class="map-target" id="map-target" hidden><span></span></span>
-          <small>Made with Natural Earth.</small>
+        <div class="feature-stage">
+          <section class="inspector-panel self-ip-set" tabindex="0" aria-label="${escapeHtml(t("home.panelAria"))}">
+            <div class="panel-topline">
+              <span>${escapeHtml(t("home.yourIpAddress"))}</span>
+            </div>
+            <div class="inspector-split">
+              <div class="inspector-core">
+                <div class="ip-display">
+                  <span>${escapeHtml(t("home.ipAddress"))}</span>
+                  <strong id="ip-display">${escapeHtml(t("home.resolving"))}</strong>
+                </div>
+                <form class="lookup-control" id="lookup-form">
+                  <label for="ipaddress">${escapeHtml(t("home.lookupLabel"))}</label>
+                  <div class="lookup-line">
+                    <input id="ipaddress" type="text" inputmode="decimal" autocomplete="off" placeholder="${escapeHtml(
+                      t("home.lookupPlaceholder"),
+                    )}" />
+                    <button type="submit">${escapeHtml(t("home.lookupButton"))}</button>
+                  </div>
+                  <div class="lookup-actions">
+                    <button type="button" id="current-ip-button">${escapeHtml(t("home.currentIpButton"))}</button>
+                    <a href="#cli">${escapeHtml(t("home.viewCli"))}</a>
+                  </div>
+                  <p class="validation" id="lookup-message" hidden></p>
+                </form>
+                <div class="detail-table" id="detail-table"></div>
+                <p class="license" id="license"></p>
+              </div>
+              <aside class="self-location-panel" aria-label="${escapeHtml(t("home.signalLocation"))}">
+                <div class="self-location-header">
+                  <span>${escapeHtml(t("home.signalLocation"))}</span>
+                  <strong>GeoIP</strong>
+                </div>
+                <div class="location-map self-location-map" aria-label="${escapeHtml(t("detail.coordinates"))}">
+                  ${renderWorldMap()}
+                  <span class="map-target" id="map-target" hidden><span></span></span>
+                  <small>Made with Natural Earth.</small>
+                </div>
+                <div class="mini-table self-location-table" id="location-table"></div>
+              </aside>
+            </div>
+          </section>
+          ${renderLiveAccessPanel()}
         </div>
-        <div class="mini-table" id="location-table"></div>
       </div>
     </section>
     <section class="content-section cli-section" id="cli">
@@ -2249,6 +2337,283 @@ function renderHome(): void {
   `);
 
   void initHome();
+  initLiveAccess();
+}
+
+function renderLiveAccessPanel(): string {
+  return `
+    <section class="live-access-set" id="live-access-set" tabindex="0" aria-labelledby="live-access-title">
+      <div class="live-access-panel" id="live-access-panel">
+        <div class="live-panel-header">
+          <div>
+            <h2 id="live-access-title">${escapeHtml(t("home.liveTitle"))}</h2>
+            <p>${escapeHtml(t("home.liveText"))}</p>
+          </div>
+          <span class="live-status" id="live-access-status" data-status="${escapeHtml(liveAccessState.status)}">
+            ${renderLiveAccessStatus(liveAccessState.status)}
+          </span>
+        </div>
+        <div class="location-map live-access-map" id="live-access-map" aria-label="${escapeHtml(t("home.liveTitle"))}">
+          ${renderLiveAccessMapContent()}
+        </div>
+      </div>
+      <section class="live-feed" id="live-access-feed" aria-label="${escapeHtml(t("home.liveFeed"))}">
+        ${renderLiveAccessFeed()}
+      </section>
+    </section>
+  `;
+}
+
+function renderLiveAccessStatus(status: LiveAccessStatus): string {
+  return `<span aria-hidden="true"></span><strong>${escapeHtml(liveAccessStatusLabel(status))}</strong>`;
+}
+
+function liveAccessStatusLabel(status: LiveAccessStatus): string {
+  if (status === "connected") return t("home.liveStatusConnected");
+  if (status === "reconnecting") return t("home.liveStatusReconnecting");
+  if (status === "preview") return t("home.liveStatusPreview");
+  if (status === "unavailable") return t("home.liveStatusUnavailable");
+  return t("home.liveStatusConnecting");
+}
+
+function renderLiveAccessMapContent(): string {
+  const mapEvents = liveAccessState.events.filter(hasLiveAccessCoordinates).slice(0, 28);
+  const markers = mapEvents
+    .map((event, index) => {
+      const point = liveAccessPoint(event);
+      const recency = Math.max(0, 1 - index / Math.max(1, mapEvents.length));
+      const size = 11 + recency * 11;
+      const markerTone = index % 3;
+      return `
+        <span
+          class="live-map-marker tone-${markerTone}"
+          style="left: ${point.x.toFixed(3)}%; top: ${point.y.toFixed(3)}%; width: ${size.toFixed(1)}px; height: ${size.toFixed(
+            1,
+          )}px; --pulse-delay: ${Math.min(index * 130, 1200)}ms; opacity: ${(0.48 + recency * 0.5).toFixed(2)}"
+          title="${escapeHtml(`${liveAccessLocation(event)} ${liveAccessAsnLabel(event)}`)}"
+        ></span>
+      `;
+    })
+    .join("");
+
+  return `
+    ${renderWorldMap()}
+    ${renderLiveAccessArcs(mapEvents.slice(0, 6))}
+    ${markers}
+    <small>Made with Natural Earth.</small>
+  `;
+}
+
+function renderLiveAccessArcs(events: LiveAccessEvent[]): string {
+  if (events.length < 2) return "";
+  const anchor = liveAccessPoint(events[0]);
+  const paths = events
+    .slice(1)
+    .map((event, index) => {
+      const point = liveAccessPoint(event);
+      const midX = (anchor.x + point.x) / 2;
+      const midY = Math.max(8, Math.min(anchor.y, point.y) - 14 - index * 2);
+      return `<path d="M ${point.x.toFixed(2)} ${point.y.toFixed(2)} Q ${midX.toFixed(2)} ${midY.toFixed(2)} ${anchor.x.toFixed(
+        2,
+      )} ${anchor.y.toFixed(2)}"></path>`;
+    })
+    .join("");
+  return `
+    <svg class="live-map-arcs" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      ${paths}
+    </svg>
+  `;
+}
+
+function renderLiveAccessFeed(): string {
+  const rows = liveAccessState.events.filter(hasLiveAccessCoordinates).slice(0, 5);
+  const title = `<h3 class="live-feed-title">${escapeHtml(t("home.liveFeed"))}</h3>`;
+  if (rows.length === 0) {
+    return `${title}<p class="live-feed-empty">${escapeHtml(t("home.liveEmpty"))}</p>`;
+  }
+  return `
+    ${title}
+    <div class="live-feed-head" aria-hidden="true">
+      <span>${escapeHtml(t("home.liveFeedLocation"))}</span>
+      <span>${escapeHtml(t("home.liveFeedAsn"))}</span>
+      <span>${escapeHtml(t("home.liveFeedTime"))}</span>
+    </div>
+    ${rows
+      .map(
+        (event, index) => `
+          <article class="live-feed-row">
+            <strong><i class="tone-${index % 3}" aria-hidden="true"></i>${escapeHtml(liveAccessLocation(event))}</strong>
+            <span>${escapeHtml(liveAccessAsnLabel(event))}</span>
+            <time datetime="${escapeHtml(event.timestamp)}">${escapeHtml(formatLiveAccessTime(event.timestamp))}</time>
+          </article>
+        `,
+      )
+      .join("")}
+  `;
+}
+
+function initLiveAccess(): void {
+  stopLiveAccessStream();
+  if (isStaticFrontendPreview() || typeof EventSource === "undefined") {
+    startLiveAccessPreview();
+    return;
+  }
+
+  liveAccessState.status = "connecting";
+  updateLiveAccessPanel();
+  const source = new EventSource("/access-stream");
+  liveAccessSource = source;
+
+  source.addEventListener("open", () => {
+    liveAccessState.status = "connected";
+    updateLiveAccessPanel();
+  });
+  source.addEventListener("ready", () => {
+    liveAccessState.status = "connected";
+    updateLiveAccessPanel();
+  });
+  source.addEventListener("access", (message) => {
+    const event = parseLiveAccessEvent(message);
+    if (!event) return;
+    liveAccessState.status = "connected";
+    addLiveAccessEvent(event);
+    updateLiveAccessPanel();
+  });
+  source.addEventListener("error", () => {
+    liveAccessState.status = liveAccessState.events.length > 0 ? "reconnecting" : "unavailable";
+    updateLiveAccessPanel();
+  });
+}
+
+function stopLiveAccessStream(): void {
+  if (liveAccessSource) {
+    liveAccessSource.close();
+    liveAccessSource = null;
+  }
+  if (liveAccessPreviewTimer !== 0) {
+    window.clearInterval(liveAccessPreviewTimer);
+    liveAccessPreviewTimer = 0;
+  }
+}
+
+function startLiveAccessPreview(): void {
+  liveAccessState.status = "preview";
+  liveAccessState.events = SAMPLE_LIVE_ACCESS_EVENTS.map((event, index) => ({
+    ...event,
+    id: `preview-seed-${index}`,
+    timestamp: new Date(Date.now() - index * 11000).toISOString(),
+  }));
+  updateLiveAccessPanel();
+  let nextIndex = 0;
+  liveAccessPreviewTimer = window.setInterval(() => {
+    const template = SAMPLE_LIVE_ACCESS_EVENTS[nextIndex % SAMPLE_LIVE_ACCESS_EVENTS.length];
+    nextIndex += 1;
+    addLiveAccessEvent({
+      ...template,
+      id: `preview-${Date.now()}-${nextIndex}`,
+      timestamp: new Date().toISOString(),
+    });
+    updateLiveAccessPanel();
+  }, 2600);
+}
+
+function parseLiveAccessEvent(message: Event): LiveAccessEvent | null {
+  if (!(message instanceof MessageEvent)) return null;
+  try {
+    const value = JSON.parse(message.data) as Partial<LiveAccessEvent> & {
+      id?: string | number;
+      ts?: string | number;
+      lat?: number;
+      lon?: number;
+    };
+    const latitude = typeof value.lat === "number" ? value.lat : value.latitude;
+    const longitude = typeof value.lon === "number" ? value.lon : value.longitude;
+    const timestamp = normalizeLiveAccessTimestamp(value.timestamp, value.ts);
+    if (
+      typeof latitude !== "number" ||
+      typeof longitude !== "number" ||
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      timestamp === ""
+    ) {
+      return null;
+    }
+    return {
+      timestamp,
+      id: value.id === undefined ? undefined : String(value.id),
+      countryCode: value.countryCode,
+      countryName: value.countryName,
+      city: value.city,
+      subdivision: value.subdivision,
+      label: value.label,
+      latitude,
+      longitude,
+      asn: value.asn,
+      organization: value.organization,
+      network: value.network,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function normalizeLiveAccessTimestamp(timestamp: string | undefined, compactTimestamp: string | number | undefined): string {
+  if (timestamp) return timestamp;
+  const numericTimestamp = typeof compactTimestamp === "string" ? Number(compactTimestamp) : compactTimestamp;
+  if (typeof numericTimestamp !== "number" || !Number.isFinite(numericTimestamp)) return "";
+  const millis = numericTimestamp > 9999999999 ? numericTimestamp : numericTimestamp * 1000;
+  const date = new Date(millis);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
+function addLiveAccessEvent(event: LiveAccessEvent): void {
+  if (event.id && liveAccessState.events.some((item) => item.id === event.id)) return;
+  liveAccessState.events = [event, ...liveAccessState.events.filter((item) => item.id !== event.id)].slice(0, 40);
+}
+
+function updateLiveAccessPanel(): void {
+  const status = document.querySelector<HTMLElement>("#live-access-status");
+  const map = document.querySelector<HTMLElement>("#live-access-map");
+  const feed = document.querySelector<HTMLElement>("#live-access-feed");
+  if (!status || !map || !feed) return;
+  status.dataset.status = liveAccessState.status;
+  status.innerHTML = renderLiveAccessStatus(liveAccessState.status);
+  map.innerHTML = renderLiveAccessMapContent();
+  feed.innerHTML = renderLiveAccessFeed();
+}
+
+function hasLiveAccessCoordinates(event: LiveAccessEvent): boolean {
+  return Number.isFinite(event.latitude) && Number.isFinite(event.longitude);
+}
+
+function liveAccessPoint(event: LiveAccessEvent): { x: number; y: number } {
+  return {
+    x: clamp(((event.longitude + 180) / 360) * 100, 0, 100),
+    y: clamp(((90 - event.latitude) / 180) * 100, 0, 100),
+  };
+}
+
+function liveAccessLocation(event: LiveAccessEvent): string {
+  if (event.label) return event.label;
+  const place = event.city || event.subdivision || event.countryName || "";
+  return [place, event.countryCode].filter(Boolean).join(", ") || t("message.unknown");
+}
+
+function liveAccessAsnLabel(event: LiveAccessEvent): string {
+  if (event.network) return event.network;
+  const asn = event.asn && event.asn > 0 ? `AS${event.asn}` : "";
+  return [event.organization, asn].filter(Boolean).join(" ") || t("message.unknown");
+}
+
+function formatLiveAccessTime(timestamp: string): string {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "--:--:--";
+  return new Intl.DateTimeFormat(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(date);
 }
 
 async function initHome(): Promise<void> {
@@ -2279,7 +2644,7 @@ async function initHome(): Promise<void> {
 
     setNavIp(currentIp || info.ipAddress);
     requiredElement("#ip-display").textContent = info.ipAddress || t("message.unknown");
-    requiredElement("#detail-table").innerHTML = renderRows(detailsFor(info));
+    requiredElement("#detail-table").innerHTML = renderRows(homeDetailsFor(info));
     requiredElement("#location-table").innerHTML = renderRows(locationRowsFor(info));
     updateMapTarget(info);
     requiredElement("#license").innerHTML = licenseHtml();
@@ -3195,6 +3560,9 @@ function requiredElement<T extends Element = HTMLElement>(selector: string): T {
 }
 
 function renderPage(): void {
+  if (page !== "home") {
+    stopLiveAccessStream();
+  }
   if (page === "home") {
     renderHome();
     return;
